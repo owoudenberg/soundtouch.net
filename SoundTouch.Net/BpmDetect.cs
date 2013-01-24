@@ -105,17 +105,8 @@ namespace SoundTouch
         /// RMS volume sliding average approximation level accumulator
         protected double RmsVolumeAccu;
 
-        /// Accumulator for accounting what proportion of samples exceed cutCoeff level
-        private double _aboveCutAccu;
-
-        /// Level below which to cut off signals
-        private double _cutCoeff;
-
         /// Amplitude envelope sliding average approximation level accumulator
         private double _envelopeAccu;
-
-        /// Accumulator for total samples to calculate proportion of samples that exceed cutCoeff level
-        private double _totalAccu;
 
         /// <summary>
         /// Initializes a new instance of the 
@@ -133,12 +124,8 @@ namespace SoundTouch
 
             _envelopeAccu = 0;
 
-            _cutCoeff = 1.75;
-            _aboveCutAccu = 0;
-            _totalAccu = 0;
-
-            // choose decimation factor so that result is approx. 500 Hz
-            DecimateBy = sampleRate/500;
+            // choose decimation factor so that result is approx. 1000 Hz
+            DecimateBy = sampleRate/1000;
             Debug.Assert(DecimateBy > 0);
             Debug.Assert(INPUT_BLOCK_SAMPLES < DecimateBy*DECIMATED_BLOCK_SAMPLES);
 
@@ -218,29 +205,9 @@ namespace SoundTouch
 
                 // cut amplitudes that are below cutoff ~2 times RMS volume
                 // (we're interested in peak values, not the silent moments)
-                val -= _cutCoeff*Math.Sqrt(RmsVolumeAccu*Avgnorm);
-                if (val > 0)
-                {
-                    _aboveCutAccu += 1.0; // sample above threshold
-                }
-                else
+                if (val < 0.5 * Math.Sqrt(RmsVolumeAccu * Avgnorm))
                 {
                     val = 0;
-                }
-
-                _totalAccu += 1.0;
-
-                // maintain sliding statistic what proportion of 'val' samples is
-                // above cutoff threshold
-                _aboveCutAccu *= 0.99931; // 2 sec time constant
-                _totalAccu *= 0.99931;
-
-                if (_totalAccu > 500)
-                {
-                    // after initial settling, auto-adjust cutoff level so that ~8% of 
-                    // values are above the threshold
-                    double d = (_aboveCutAccu/_totalAccu) - 0.08;
-                    _cutCoeff += 0.001*d;
                 }
 
                 // smooth amplitude envelope
@@ -248,12 +215,6 @@ namespace SoundTouch
                 _envelopeAccu += val;
 
                 samples[i] = CutPeaks((_envelopeAccu*norm));
-            }
-
-            // check that cutoff doesn't get too small - it can be just silent sequence!
-            if (_cutCoeff < 1.5)
-            {
-                _cutCoeff = 1.5;
             }
         }
 
@@ -303,6 +264,21 @@ namespace SoundTouch
             }
         }
 
+        public void RemoveBias()
+        {
+            float minval = 1e12f; // arbitrary large number
+
+            for (int i = WindowStart; i < WindowLen; i++)
+            {
+                if (Xcorr[i] < minval)
+                    minval = Xcorr[i];
+            }
+
+            for (int i = WindowStart; i < WindowLen; i++)
+            {
+                Xcorr[i] -= minval;
+            }
+        }
 
         /// <summary>
         /// Analyzes the results and returns the BPM rate. Use this function to
@@ -319,6 +295,9 @@ namespace SoundTouch
 
             // save bpm debug analysis data if debug data enabled
             _SaveDebugData(Xcorr, WindowStart, WindowLen, coeff);
+
+            // remove bias from xcorr data
+            RemoveBias();
 
             // find peak position
             double peakPos = peakFinder.DetectPeak(Xcorr, WindowStart, WindowLen);
@@ -349,12 +328,12 @@ namespace SoundTouch
     {
         public BpmDetectInteger(int numChannels, int sampleRate) : base(numChannels, sampleRate)
         {
-            // Initialize RMS volume accumulator to RMS level of 3000 (out of 32768) that's
-            // a typical RMS signal level value for song data. This value is then adapted
+            // Initialize RMS volume accumulator to RMS level of 1500 (out of 32768) that's
+            // safe initial RMS signal level value for song data. This value is then adapted
             // to the actual level during processing.
 
             // integer samples
-            RmsVolumeAccu = (3000*3000)/Avgnorm;
+            RmsVolumeAccu = (1500*1500)/Avgnorm;
         }
 
         protected override void UpdateXCorr(int processSamples)
@@ -439,7 +418,7 @@ namespace SoundTouch
         public BpmDetectFloat(int numChannels, int sampleRate) : base(numChannels, sampleRate)
         {
             // float samples, scaled to range [-1..+1[
-            RmsVolumeAccu = (0.092f*0.092f)/Avgnorm;
+            RmsVolumeAccu = (0.045f * 0.045f) / Avgnorm;
         }
 
         protected override void UpdateXCorr(int processSamples)

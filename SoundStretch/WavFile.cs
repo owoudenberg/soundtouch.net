@@ -31,6 +31,8 @@ using System.Runtime.InteropServices;
 
 namespace SoundStretch
 {
+    using SoundTouch.Utility;
+
     /// <summary>WAV audio file 'riff' section header</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WavRiff
@@ -163,11 +165,13 @@ namespace SoundStretch
                 throw new InvalidOperationException(msg);
             }
 
+            /* Ignore 'fixed' field value as 32bit signed linear data can have other value than 1.
             if (_header.Format.Fixed != 1)
             {
                 const string msg = "Input file uses unsupported encoding.";
                 throw new InvalidOperationException(msg);
             }
+            */
 
             _dataRead = 0;
         }
@@ -416,6 +420,11 @@ namespace SoundStretch
             return (int)(1000.0 * numSamples / sampleRate + 0.5);
         }
 
+        public int GetElapsedMs()
+        {
+            return (int)(1000.0 * _dataRead / _header.Format.ByteRate);
+        }
+
         /// <summary>
         /// Reads audio samples from the WAV file. This routine works only for 8
         /// bit samples. Reads given number of elements from the file or if
@@ -471,48 +480,54 @@ namespace SoundStretch
             int numElems;
 
             Debug.Assert(buffer != null);
-            if (_header.Format.BitsPerSample == 8)
+            switch (_header.Format.BitsPerSample)
             {
-                // 8 bit format
-                var temp = new byte[maxElements];
-                int i;
+                case 8:
+                    {
+                        // 8 bit format
+                        var temp = new byte[maxElements];
+                        int i;
 
-                numElems = Read(temp, maxElements);
-                // convert from 8 to 16 bit
-                for (i = 0; i < numElems; i ++)
-                {
-                    buffer[i] = (short) (temp[i] << 8);
-                }
-            }
-            else
-            {
-                // 16 bit format
-                if (_header.Format.BitsPerSample != 16)
-                {
-                    string msg = string.Format("Only 8/16 bit sample WAV files supported. Can't open WAV file with {0} bit sample format.", (int)_header.Format.BitsPerSample);
-                    throw new InvalidOperationException(msg);
-                }
+                        numElems = Read(temp, maxElements);
+                        // convert from 8 to 16 bit
+                        for (i = 0; i < numElems; i++)
+                        {
+                            buffer[i] = (short)((temp[i] - 128) * 256);
+                        }
+                        break;
+                    }
 
-                Debug.Assert(sizeof (short) == 2);
+                case 16:
+                    {
+                        // 16 bit format
+                        Debug.Assert(sizeof(short) == 2);
 
-                int numBytes = maxElements*2;
-                long afterDataRead = _dataRead + numBytes;
-                if (afterDataRead > _header.Data.DataLen)
-                {
-                    // Don't read more samples than are marked available in header
-                    numBytes = _header.Data.DataLen - (int) _dataRead;
-                    Debug.Assert(numBytes >= 0);
-                }
+                        int numBytes = maxElements * 2;
+                        long afterDataRead = _dataRead + numBytes;
+                        if (afterDataRead > _header.Data.DataLen)
+                        {
+                            // Don't read more samples than are marked available in header
+                            numBytes = _header.Data.DataLen - (int)_dataRead;
+                            Debug.Assert(numBytes >= 0);
+                        }
 
-                var data = new byte[buffer.Length*sizeof (short)];
-                numBytes = _fileStream.Read(data, 0, numBytes);
-                Buffer.BlockCopy(data, 0, buffer, 0, numBytes);
+                        var data = new byte[buffer.Length * sizeof(short)];
+                        numBytes = _fileStream.Read(data, 0, numBytes);
+                        Buffer.BlockCopy(data, 0, buffer, 0, numBytes);
 
-                _dataRead += numBytes;
-                numElems = numBytes/2;
+                        _dataRead += numBytes;
+                        numElems = numBytes / 2;
 
-                // 16bit samples, swap byte order if necessary
-                _endian.Swap16Buffer(buffer, numElems);
+                        // 16bit samples, swap byte order if necessary
+                        _endian.Swap16Buffer(buffer, numElems);
+                        break;
+                    }
+
+                default:
+                    {
+                        string msg = string.Format("Only 8/16 bit sample WAV files supported in integer compilation. Can't open WAV file with {0} bit sample format.", (int)_header.Format.BitsPerSample);
+                        throw new InvalidOperationException(msg);
+                    }
             }
 
             return numElems;
@@ -528,20 +543,84 @@ namespace SoundStretch
         /// <param name="maxElements">Size of <paramref name="buffer"/> array
         /// (number of array elements).</param>
         /// <returns>Number of elements read from the file.</returns>
+        /// <remarks>Notice that reading in float format supports 8/16/24/32bit sample formats.</remarks>
         public int Read(float[] buffer, int maxElements)
         {
-            var temp = new short[maxElements];
+            Debug.Assert(buffer != null);
 
-            int num = Read(temp, maxElements);
+            int bytesPerSample = _header.Format.BitsPerSample / 8;
+            if ((bytesPerSample < 1) || (bytesPerSample > 4))
+                throw new InvalidOperationException(string.Format("Only 8/16/24/32 bit sample WAV files supported. Can't open WAV file with {0} bit sample format.", _header.Format.BitsPerSample));
 
-            const double fscale = 1.0/32768.0;
-            // convert to floats, scale to range [-1..+1[
-            for (int i = 0; i < num; i++)
+            int numBytes = maxElements * bytesPerSample;
+            long afterDataRead = _dataRead + numBytes;
+            if (afterDataRead > _header.Data.DataLen) 
             {
-                buffer[i] = (float) (fscale*temp[i]);
+                // Don't read more samples than are marked available in header
+                numBytes = _header.Data.DataLen - (int)_dataRead;
+                Debug.Assert(numBytes >= 0);
             }
 
-            return num;
+            // read raw data into temporary buffer
+            byte[] temp = new byte[numBytes];
+            numBytes = _fileStream.Read(temp, 0, numBytes);
+            _dataRead += numBytes;
+
+            int numElements = numBytes / bytesPerSample;
+
+            // swap byte ordert & convert to float, depending on sample format
+            switch (bytesPerSample)
+            {
+                case 1:
+                    {
+                        const double conv = 1.0 / 128.0;
+                        for (int i = 0; i < numElements; i ++)
+                        {
+                            buffer[i] = (float)(temp[i] * conv - 1.0);
+                        }
+                        break;
+                    }
+
+                case 2:
+                    {
+                        var temp2 = (ArrayPtr<short>)temp;
+                        const double conv = 1.0 / 32768;
+                        for (int i = 0; i < numElements; i ++)
+                        {
+                            short value = temp2[i];
+                            buffer[i] = (float)(_endian.Swap16(ref value) * conv);
+                        }
+                        break;
+                    }
+
+                case 3:
+                    {
+                        const double conv = 1.0 / 8388608;
+                        for (int i = 0; i < numElements; i ++)
+                        {
+                            int value = BitConverter.ToInt32(temp, i * 3);
+                            value = _endian.Swap32(ref value) & 0x00ffffff;             // take 24 bits
+                            value |= ((value & 0x00800000) != 0) ? unchecked((int)0xff000000) : 0;  // extend minus sign bits
+                            buffer[i] = (float)(value * conv);
+                        }
+                        break;
+                    }
+
+                case 4:
+                    {
+                        var temp2 = (ArrayPtr<int>)temp;                        
+                        const double conv = 1.0 / 2147483648;
+                        Debug.Assert(sizeof(int) == 4);
+                        for (int i = 0; i < numElements; i ++)
+                        {
+                            int value = temp2[i];
+                            buffer[i] = (float)(_endian.Swap32(ref value) * conv);
+                        }
+                        break;
+                    }
+            }
+
+            return numElements;
         }
 
         /// <summary>

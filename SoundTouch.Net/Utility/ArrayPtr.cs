@@ -60,6 +60,13 @@ namespace SoundTouch.Utility
             return new ArrayPtr<T>(buffer, 0);
         }
 
+        public static explicit operator ArrayPtr<T>(byte[] buffer)
+        {
+            var temp = new T[buffer.Length / Marshal.SizeOf(typeof(T))];
+            Buffer.BlockCopy(buffer, 0, temp, 0, buffer.Length);
+            return temp;
+        }
+
         /// <summary>
         /// Returns the first element <paramref name="buffer"/> is pointing to.
         /// </summary>

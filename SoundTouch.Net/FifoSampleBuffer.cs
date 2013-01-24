@@ -280,5 +280,20 @@ namespace SoundTouch
             _channels = numChannels;
             _samplesInBuffer = usedBytes / _channels;
         }
+
+        /// <summary>
+        ///  Allow trimming (downwards) amount of samples in pipeline.
+        /// </summary>
+        /// <param name="numSamples">The number of samples</param>
+        /// <returns>Returns adjusted amount of samples</returns>
+        public override int AdjustAmountOfSamples(int numSamples)
+        {
+            if (numSamples < _samplesInBuffer)
+            {
+                _samplesInBuffer = numSamples;
+            }
+
+            return _samplesInBuffer;
+        }
     }
 }

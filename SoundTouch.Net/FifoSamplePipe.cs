@@ -38,6 +38,13 @@ namespace SoundTouch
         public abstract void Clear();
 
         /// <summary>
+        /// Allow trimming (downwards) amount of samples in pipeline.
+        /// </summary>
+        /// <param name="numSamples">The number of samples.</param>
+        /// <returns>Returns adjusted amount of samples.</returns>
+        public abstract int AdjustAmountOfSamples(int numSamples);
+
+        /// <summary>
         /// Gets a value indicating whether there aren't any samples available
         /// for outputting.
         /// </summary>

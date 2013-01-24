@@ -28,6 +28,8 @@ using System.Runtime.InteropServices;
 
 namespace SoundStretch
 {
+    using System.Diagnostics;
+
     /// <summary>Class for writing WAV audio files.</summary>
     public class WavOutFile : IDisposable
     {
@@ -207,38 +209,52 @@ namespace SoundStretch
             // 16 bit samples
             if (numElements < 1) return; // nothing to do
 
-            if (_header.Format.BitsPerSample == 8)
+            switch (_header.Format.BitsPerSample)
             {
-                int i;
-                var temp = new byte[numElements];
-                // convert from 16bit format to 8bit format
-                for (i = 0; i < numElements; i ++)
-                {
-                    temp[i] = (byte) (buffer[i] >> 8);
-                }
-                // write in 8bit format
-                Write(temp, numElements);
+                case 8:
+                    {
+                        int i;
+                        var temp = new byte[numElements];
+                        // convert from 16bit format to 8bit format
+                        for (i = 0; i < numElements; i++)
+                        {
+                            temp[i] = (byte)(buffer[i] / 256 + 128);
+                        }
+                        // write in 8bit format
+                        Write(temp, numElements);
+                        break;
+                    }
+
+                case 16:
+                    {
+                        // 16bit format
+                        byte[] pTemp = new byte[numElements * sizeof(short)];
+
+                        // allocate temp buffer to swap byte order if necessary
+                        _endian.Swap16Buffer(buffer, numElements);
+                        Buffer.BlockCopy(buffer, 0, pTemp, 0, numElements * sizeof(short));
+
+                        _fileStream.Write(pTemp, 0, numElements * sizeof(short));
+
+                        _bytesWritten += 2 * numElements;
+                        break;
+                    }
+
+                default:
+                    {
+                        string msg = string.Format("Only 8/16 bit sample WAV files supported. Can't open WAV file with {0} bit sample format.", _header.Format.BitsPerSample);
+                        throw new InvalidOperationException(msg);
+                    }
             }
-            else
-            {
-                // 16bit format
-                var pTemp = new byte[numElements*sizeof (short)];
+        }
 
-                if (_header.Format.BitsPerSample != 16)
-                {
-                    string msg = string.Format("Only 8/16 bit sample WAV files supported. Can't open WAV file with {0} bit sample format.", _header.Format.BitsPerSample);
-                    throw new InvalidOperationException(msg);
-                }
-
-                // allocate temp buffer to swap byte order if necessary
-                _endian.Swap16Buffer(buffer, numElements);
-                Buffer.BlockCopy(buffer, 0, pTemp, 0, numElements*sizeof (short));
-
-                _fileStream.Write(pTemp, 0, numElements*sizeof (short));
-
-
-                _bytesWritten += 2*numElements;
-            }
+        private int Saturate(float value, float minval, float maxval)
+        {
+            if (value > maxval)
+                value = maxval;
+            else if (value < minval)
+                value = minval;
+            return (int)value;
         }
 
         /// <summary>
@@ -248,21 +264,64 @@ namespace SoundStretch
         /// <param name="numElements">How many array items are to be written to file.</param>
         public void Write(float[] buffer, int numElements)
         {
-            var temp = new short[numElements];
+            if (numElements == 0) return;
 
-            // convert to 16 bit integer
-            for (int i = 0; i < numElements; i++)
+            int bytesPerSample = _header.Format.BitsPerSample / 8;
+            int numBytes = numElements * bytesPerSample;
+            byte[] temp = new byte[numBytes];
+
+            switch (bytesPerSample)
             {
-                // convert to integer
-                var iTemp = (int) (32768.0f*buffer[i]);
+                case 1:
+                    {
+                        for (int i = 0; i < numElements; i++)
+                        {
+                            temp[i] = (byte)Saturate(buffer[i] * 128.0f + 128.0f, 0f, 255.0f);
+                        }
+                        break;
+                    }
 
-                // saturate
-                if (iTemp < -32768) iTemp = -32768;
-                if (iTemp > 32767) iTemp = 32767;
-                temp[i] = (short) iTemp;
+                case 2:
+                    {
+                        short[] temp2 = new short[temp.Length / 2];
+                        for (int i = 0; i < numElements; i++)
+                        {
+                            short value = (short)Saturate(buffer[i] * 32768.0f, -32768.0f, 32767.0f);
+                            temp2[i] = _endian.Swap16(ref value);
+                        }
+                        Buffer.BlockCopy(temp2, 0, temp, 0, temp.Length);                        
+                        break;
+                    }
+
+                case 3:
+                    {
+                        for (int i = 0; i < numElements; i++)
+                        {
+                            int value = Saturate(buffer[i] * 8388608.0f, -8388608.0f, 8388607.0f);
+                            Buffer.BlockCopy(BitConverter.GetBytes(_endian.Swap32(ref value)), 0, temp, i * 3, 4);
+                        }
+                        break;
+                    }
+
+                case 4:
+                    {
+                        int[] temp2 = new int[temp.Length / 4];
+                        for (int i = 0; i < numElements; i++)
+                        {
+                            int value = Saturate(buffer[i] * 2147483648.0f, -2147483648.0f, 2147483647.0f);
+                            temp2[i] = _endian.Swap32(ref value);
+                        }
+                        Buffer.BlockCopy(temp2, 0, temp, 0, temp.Length);
+                        break;
+                    }
+
+                default:
+                    Debug.Assert(false);
+                    break;
             }
 
-            Write(temp, numElements);
+            _fileStream.Write(temp, 0, numBytes);
+            _bytesWritten += numBytes;
         }
-    } ;
+    }
 }

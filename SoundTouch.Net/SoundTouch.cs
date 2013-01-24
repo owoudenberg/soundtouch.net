@@ -76,10 +76,10 @@ namespace SoundTouch
         where TLongSampleType : struct
     {
         /// <summary><c>SoundTouch</c> library version string</summary>
-        private const string SOUNDTOUCH_VERSION = "1.6.0";
+        private const string SOUNDTOUCH_VERSION = "1.7.1";
 
         /// <summary><c>SoundTouch</c> library version id</summary>
-        private const int SOUNDTOUCH_VERSION_ID = (10600);
+        private const int SOUNDTOUCH_VERSION_ID = (10701);
 
 
         /// <summary>Rate transposer class instance</summary>
@@ -199,7 +199,7 @@ namespace SoundTouch
         /// <summary>
         /// Flushes the last samples from the processing pipeline to the output.
         /// Clears also the internal processing buffers.
-        ///</summary>
+        /// </summary>
         /// <remarks>
         /// This function is meant for extracting the last samples of a sound
         /// stream. This function may introduce additional blank samples in the
@@ -208,9 +208,16 @@ namespace SoundTouch
         /// </remarks>
         public void Flush()
         {
-            var buff = new TSampletype[128];
+            var buff = new TSampletype[64 * 2]; // note: allocate 2*64 to cater 64 sample frames of stereo sound
+
+            // check how many samples still await processing, and scale
+            // that by tempo & rate to get expected output sample count
+            int nUnprocessed = NumberOfUnprocessedSamples();
+            nUnprocessed = (int)((double)nUnprocessed / (_tempo * _rate) + 0.5);
+
             int nOut = AvailableSamples;
-            
+            nOut += nUnprocessed;       // ... and how many we expect there to be in the end
+
             // "Push" the last active samples out from the processing pipeline by
             // feeding blank samples into the processing pipeline until new, 
             // processed samples appear in the output (not however, more than 
@@ -218,7 +225,16 @@ namespace SoundTouch
             for (int i = 0; i < 128; i ++) 
             {
                 PutSamples(buff, 64);
-                if (AvailableSamples != nOut) break;  // new samples have appeared in the output!
+                if (AvailableSamples != nOut)
+                {
+                    // Enough new samples have appeared into the output!
+                    // As samples come from processing with bigger chunks, now truncate it
+                    // back to maximum "nOut" samples to improve duration accuracy 
+                    AdjustAmountOfSamples(nOut);
+
+                    // finish
+                    break;
+                }
             }
 
             // Clear working buffers

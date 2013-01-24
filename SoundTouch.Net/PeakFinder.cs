@@ -88,6 +88,7 @@ namespace SoundTouch
                 if (data[pos + direction] < level) return pos; // crossing found
                 pos += direction;
             }
+
             return -1; // not found
         }
 
@@ -139,7 +140,7 @@ namespace SoundTouch
 
             int pos = peakpos;
 
-            while ((pos > _minPos) && (pos < _maxPos))
+            while ((pos > _minPos + 1) && (pos < _maxPos - 1))
             {
                 int prevpos = pos;
                 pos += direction;
@@ -182,11 +183,8 @@ namespace SoundTouch
             int gp1 = FindGround(data, peakpos, -1);
             int gp2 = FindGround(data, peakpos, 1);
 
-            float groundLevel = Math.Max(data[gp1], data[gp2]);
+            float groundLevel = 0.5f * (data[gp1] + data[gp2]);
             float peakLevel = data[peakpos];
-
-            if (groundLevel < 1e-9) return 0; // ground level too small => detection failed
-            if ((peakLevel/groundLevel) < 1.3) return 0; // peak less than 30% of the ground level => no good peak detected
 
             // calculate 70%-level of the peak
             float cutLevel = 0.70f*peakLevel + 0.30f*groundLevel;
@@ -240,9 +238,7 @@ namespace SoundTouch
             // Now check if the highest peak were in fact harmonic of the true base beat peak 
             // - sometimes the highest peak can be Nth harmonic of the true base peak yet 
             // just a slightly higher than the true base
-
-            int hp = (int)(highPeak + 0.5);
-
+            
             for (i = 2; i < 10; i++)
             {
                 double harmonic = i * 0.5;
@@ -266,7 +262,7 @@ namespace SoundTouch
                 // now compare to highest detected peak
                 var i1 = (int) (highPeak + 0.5);
                 var i2 = (int) (peaktmp + 0.5);
-                if (data[i2] >= 0.5 * data[i1])
+                if (data[i2] >= 0.4 * data[i1])
                 {
                     // The harmonic is at least half as high primary peak,
                     // thus use the harmonic peak instead

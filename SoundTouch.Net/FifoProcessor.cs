@@ -76,6 +76,11 @@ namespace SoundTouch
             get { return Output.IsEmpty; }
         }
 
+        public override int AdjustAmountOfSamples(int numSamples)
+        {
+            return Output.AdjustAmountOfSamples(numSamples);
+        }
+
         /// <summary>
         /// Returns number of samples currently available.
         /// </summary>

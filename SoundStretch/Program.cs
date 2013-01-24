@@ -47,9 +47,9 @@ namespace SoundStretch
         private static readonly string[] HELLOTEXT = new[]
         {
             Environment.NewLine,
-            "   SoundStretch v{0} - C++ Version Written by Olli Parviainen 2001 - 2011",
+            "   SoundStretch v{0} - C++ Version Written by Olli Parviainen 2001 - 2012",
             Environment.NewLine,
-            "   SoundStretch v{0} - C# Version Written by Olaf Woudenberg 2011",
+            "   SoundStretch v{0} - C# Version Written by Olaf Woudenberg 2011 - 2013",
             Environment.NewLine,
             "=============================================================================",
             Environment.NewLine,
@@ -269,8 +269,8 @@ namespace SoundStretch
                 // Process the sound
                 Process(soundTouch, inFile, outFile);
 
-                inFile.Dispose();
-                outFile.Dispose();
+                if (inFile != null) inFile.Dispose();
+                if (outFile != null) outFile.Dispose();
 
                 Console.Error.WriteLine("Done!");
             }
