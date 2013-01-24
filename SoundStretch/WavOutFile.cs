@@ -226,7 +226,7 @@ namespace SoundStretch
 
                 if (_header.Format.BitsPerSample != 16)
                 {
-                    string msg = string.Format("WAV file bits per sample format not supported: {0} bits per sample.", _header.Format.BitsPerSample);
+                    string msg = string.Format("Only 8/16 bit sample WAV files supported. Can't open WAV file with {0} bit sample format.", _header.Format.BitsPerSample);
                     throw new InvalidOperationException(msg);
                 }
 
