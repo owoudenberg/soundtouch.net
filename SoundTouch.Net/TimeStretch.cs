@@ -69,7 +69,7 @@ namespace SoundTouch
         private bool _autoSeqSetting;
         private bool _quickSeek;
 
-        private int _channels;
+        protected int _channels;
         private readonly FifoSampleBuffer<TSampleType> _inputBuffer;
         private readonly FifoSampleBuffer<TSampleType> _outputBuffer;
         private float _nominalSkip;
@@ -78,7 +78,6 @@ namespace SoundTouch
         private int _overlapMs;
 
         protected TSampleType[] _midBuffer;
-        protected TSampleType[] _refMidBuffer;
         protected int _sampleRate;
         private int _sampleReq;
         private int _seekLength;
@@ -119,15 +118,11 @@ namespace SoundTouch
 
         protected abstract void CalculateOverlapLength(int overlapMs);
 
-        protected abstract TLongSampleType CalculateCrossCorrStereo(ArrayPtr<TSampleType> mixingPos, ArrayPtr<TSampleType> compare);
-        protected abstract TLongSampleType CalculateCrossCorrMono(ArrayPtr<TSampleType> mixingPos, ArrayPtr<TSampleType> compare);
+        protected abstract double CalculateCrossCorr(ArrayPtr<TSampleType> mixingPos, ArrayPtr<TSampleType> compare);
 
 
         protected abstract void OverlapMono(ArrayPtr<TSampleType> pOutput, ArrayPtr<TSampleType> pInput);
         protected abstract void OverlapStereo(ArrayPtr<TSampleType> output, ArrayPtr<TSampleType> input);
-
-        protected abstract void PrecalcCorrReferenceMono();
-        protected abstract void PrecalcCorrReferenceStereo();
 
         /// <exception cref="InvalidOperationException">Can't create a TimeStretch instance for type {0}. Only <c>short</c> and <c>float</c> are supported.</exception>
         public static TimeStretch<TSampleType, TLongSampleType> NewInstance()
@@ -237,13 +232,9 @@ namespace SoundTouch
 
         private int SeekBestOverlapPosition(ArrayPtr<TSampleType> refPos)
         {
-            if (_channels == 2)
-            {
-                // stereo sound
-                return _quickSeek ? SeekBestOverlapPositionStereoQuick(refPos) : SeekBestOverlapPositionStereo(refPos);
-            }
-            // mono sound
-            return _quickSeek ? SeekBestOverlapPositionMonoQuick(refPos) : SeekBestOverlapPositionMono(refPos);
+            if (_quickSeek)
+                return SeekBestOverlapPositionQuick(refPos);
+            return SeekBestOverlapPositionFull(refPos);
         }
 
         /// <summary>
@@ -271,11 +262,8 @@ namespace SoundTouch
         /// overlapped sample sequences are 'most alike', in terms of the
         /// highest cross-correlation value over the overlapping period
         ///</summary>
-        protected virtual int SeekBestOverlapPositionStereo(ArrayPtr<TSampleType> refPos)
+        protected virtual int SeekBestOverlapPositionFull(ArrayPtr<TSampleType> refPos)
         {
-            // Slopes the amplitudes of the 'midBuffer' samples
-            PrecalcCorrReferenceStereo();
-
             double bestCorr = FLT_MIN;
             int bestOffs = 0;
 
@@ -285,7 +273,7 @@ namespace SoundTouch
             {
                 // Calculates correlation value for the mixing position corresponding
                 // to 'i'
-                double corr = Convert.ToDouble(CalculateCrossCorrStereo(refPos + 2*i, _refMidBuffer));
+                double corr = CalculateCrossCorr(refPos + _channels*i, _midBuffer);
                 // heuristic rule to slightly favour values close to mid of the range
                 double tmp = (2*i - _seekLength)/(double) _seekLength;
                 corr = ((corr + 0.1)*(1.0 - 0.25*tmp*tmp));
@@ -311,12 +299,9 @@ namespace SoundTouch
         /// overlapped sample sequences are 'most alike', in terms of the
         /// highest cross-correlation value over the overlapping period
         /// </summary>
-        protected virtual int SeekBestOverlapPositionStereoQuick(ArrayPtr<TSampleType> refPos)
+        protected virtual int SeekBestOverlapPositionQuick(ArrayPtr<TSampleType> refPos)
         {
             int scanCount;
-
-            // Slopes the amplitude of the 'midBuffer' samples
-            PrecalcCorrReferenceStereo();
 
             double bestCorr = FLT_MIN;
             int bestOffs = _scanOffsets[0, 0];
@@ -338,7 +323,7 @@ namespace SoundTouch
 
                     // Calculates correlation value for the mixing position corresponding
                     // to 'tempOffset'
-                    double corr = Convert.ToDouble(CalculateCrossCorrStereo(refPos + 2*tempOffset, _refMidBuffer));
+                    double corr = CalculateCrossCorr(refPos + _channels*tempOffset, _midBuffer);
                     // heuristic rule to slightly favour values close to mid of the range
                     double tmp = (double) (2*tempOffset - _seekLength)/_seekLength;
                     corr = ((corr + 0.1)*(1.0 - 0.25*tmp*tmp));
@@ -358,107 +343,7 @@ namespace SoundTouch
 
             return bestOffs;
         }
-
-        /// <summary>
-        /// Seeks for the optimal overlap-mixing position. The 'mono' version of
-        /// the routine
-        ///
-        /// The best position is determined as the position where the two
-        /// overlapped sample sequences are 'most alike', in terms of the
-        /// highest cross-correlation value over the overlapping period
-        /// </summary>
-        protected virtual int SeekBestOverlapPositionMono(ArrayPtr<TSampleType> refPos)
-        {
-            int tempOffset;
-
-            // Slopes the amplitude of the 'midBuffer' samples
-            PrecalcCorrReferenceMono();
-
-            double bestCorr = FLT_MIN;
-            int bestOffs = 0;
-
-            // Scans for the best correlation value by testing each possible position
-            // over the permitted range.
-            for (tempOffset = 0; tempOffset < _seekLength; tempOffset ++)
-            {
-                ArrayPtr<TSampleType> compare = refPos + tempOffset;
-
-                // Calculates correlation value for the mixing position corresponding
-                // to 'tempOffset'
-                double corr = Convert.ToDouble(CalculateCrossCorrMono(_refMidBuffer, compare));
-                // heuristic rule to slightly favour values close to mid of the range
-                double tmp = (double) (2*tempOffset - _seekLength)/_seekLength;
-                corr = ((corr + 0.1)*(1.0 - 0.25*tmp*tmp));
-
-                // Checks for the highest correlation value
-                if (corr > bestCorr)
-                {
-                    bestCorr = corr;
-                    bestOffs = tempOffset;
-                }
-            }
-            // clear cross correlation routine state if necessary (is so e.g. in MMX routines).
-            ClearCrossCorrState();
-
-            return bestOffs;
-        }
-
-        /// <summary>
-        /// Seeks for the optimal overlap-mixing position. The 'mono' version of
-        /// the routine
-        ///
-        /// The best position is determined as the position where the two
-        /// overlapped sample sequences are 'most alike', in terms of the
-        /// highest cross-correlation value over the overlapping period
-        /// </summary>
-        protected virtual int SeekBestOverlapPositionMonoQuick(ArrayPtr<TSampleType> refPos)
-        {
-            int scanCount;
-
-            // Slopes the amplitude of the 'midBuffer' samples
-            PrecalcCorrReferenceMono();
-
-            double bestCorr = FLT_MIN;
-            int bestOffs = _scanOffsets[0, 0];
-            int corrOffset = 0;
-
-            // Scans for the best correlation value using four-pass hierarchical search.
-            //
-            // The look-up table 'scans' has hierarchical position adjusting steps.
-            // In first pass the routine searhes for the highest correlation with 
-            // relatively coarse steps, then rescans the neighbourhood of the highest
-            // correlation with better resolution and so on.
-            for (scanCount = 0; scanCount < 4; scanCount ++)
-            {
-                int j = 0;
-                while (_scanOffsets[scanCount, j] != 0)
-                {
-                    int tempOffset = corrOffset + _scanOffsets[scanCount, j];
-                    if (tempOffset >= _seekLength) break;
-
-                    // Calculates correlation value for the mixing position corresponding
-                    // to 'tempOffset'
-                    double corr = Convert.ToDouble(CalculateCrossCorrMono(refPos + tempOffset, _refMidBuffer));
-                    // heuristic rule to slightly favour values close to mid of the range
-                    double tmp = (double) (2*tempOffset - _seekLength)/_seekLength;
-                    corr = ((corr + 0.1)*(1.0 - 0.25*tmp*tmp));
-
-                    // Checks for the highest correlation value
-                    if (corr > bestCorr)
-                    {
-                        bestCorr = corr;
-                        bestOffs = tempOffset;
-                    }
-                    j ++;
-                }
-                corrOffset = bestOffs;
-            }
-            // clear cross correlation routine state if necessary (is so e.g. in MMX routines).
-            ClearCrossCorrState();
-
-            return bestOffs;
-        }
-
+        
         /// <summary>
         /// clear cross correlation routine state if necessary 
         /// </summary>
@@ -629,10 +514,9 @@ namespace SoundTouch
 
             if (_overlapLength > prevOvl)
             {
-                _midBuffer = new TSampleType[_overlapLength*2];
-                ClearMidBuffer();
+                _midBuffer = new TSampleType[_overlapLength * 2];
 
-                _refMidBuffer = new TSampleType[2*_overlapLength + 16/SIZEOF_SAMPLETYPE];
+                ClearMidBuffer();
             }
         }
 

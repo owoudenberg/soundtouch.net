@@ -30,45 +30,16 @@ namespace SoundTouch
 {
     internal sealed class TimeStretchInteger : TimeStretch<short, long>
     {
-        /// <summary>
-        /// Slopes the amplitude of the 
-        /// <see cref="TimeStretch{TSampleType,TLongSampleType}._midBuffer"/> 
-        /// samples so that cross correlation is faster to calculate
-        /// </summary>
-        protected override void PrecalcCorrReferenceStereo()
-        {
-            for (int i = 0; i < _overlapLength; i++)
-            {
-                int temp = i*(_overlapLength - i);
-                int cnt2 = i*2;
-
-                int temp2 = (_midBuffer[cnt2]*temp)/_slopingDivider;
-                _refMidBuffer[cnt2] = (short) (temp2);
-                temp2 = (_midBuffer[cnt2 + 1]*temp)/_slopingDivider;
-                _refMidBuffer[cnt2 + 1] = (short) (temp2);
-            }
-        }
-
-
-        /// <summary>Slopes the amplitude of the 
-        /// <see cref="TimeStretch{TSampleType,TLongSampleType}._midBuffer"/>
-        /// samples so that cross correlation is faster to calculate</summary>
-        protected override void PrecalcCorrReferenceMono()
-        {
-            for (int i = 0; i < _overlapLength; i++)
-            {
-                long temp = i*(_overlapLength - i);
-                long temp2 = (_midBuffer[i]*temp)/_slopingDivider;
-                _refMidBuffer[i] = (short) temp2;
-            }
-        }
-
         protected override void OverlapMono(ArrayPtr<short> pOutput, ArrayPtr<short> pInput)
         {
+            int m1 = 0;
+            int m2 = _overlapLength;
+
             for (int i = 0; i < _overlapLength; i++)
             {
-                int itemp = _overlapLength - i;
-                pOutput[i] = (short) ((pInput[i]*i + _midBuffer[i]*itemp)/_overlapLength);
+                pOutput[i] = (short)((pInput[i] * m1 + _midBuffer[i] * m2) / _overlapLength);
+                m1 += 1;
+                m2 -= 1;
             }
         }
 
@@ -118,36 +89,28 @@ namespace SoundTouch
         }
 
 
-        protected override long CalculateCrossCorrMono(ArrayPtr<short> mixingPos, ArrayPtr<short> compare)
+        protected override double CalculateCrossCorr(ArrayPtr<short> mixingPos, ArrayPtr<short> compare)
         {
             long corr = 0, norm = 0;
-            for (int i = 1; i < _overlapLength; i++)
+            // Same routine for stereo and mono. For stereo, unroll loop for better
+            // efficiency and gives slightly better resolution against rounding. 
+            // For mono it same routine, just  unrolls loop by factor of 4
+            for (int i = 0; i < _channels * _overlapLength; i += 4)
             {
-                corr += (mixingPos[i]*compare[i]) >> _overlapDividerBits;
-                norm += (mixingPos[i]*mixingPos[i]) >> _overlapDividerBits;
+                corr += (mixingPos[i] * compare[i] +
+                         mixingPos[i + 1] * compare[i + 1] +
+                         mixingPos[i + 2] * compare[i + 2] +
+                         mixingPos[i + 3] * compare[i + 3]) >> _overlapDividerBits;
+                norm += (mixingPos[i] * mixingPos[i] +
+                         mixingPos[i + 1] * mixingPos[i + 1] +
+                         mixingPos[i + 2] * mixingPos[i + 2] +
+                         mixingPos[i + 3] * mixingPos[i + 3]) >> _overlapDividerBits;
             }
 
             // Normalize result by dividing by sqrt(norm) - this step is easiest 
             // done using floating point operation
-            if (norm == 0) norm = 1; // to avoid div by zero
-            return (long) ((double) corr*short.MaxValue/Math.Sqrt(norm));
-        }
-
-
-        protected override long CalculateCrossCorrStereo(ArrayPtr<short> mixingPos, ArrayPtr<short> compare)
-        {
-            long corr = 0, norm = 0;
-            for (int i = 2; i < 2*_overlapLength; i += 2)
-            {
-                corr += (mixingPos[i]*compare[i] +
-                         mixingPos[i + 1]*compare[i + 1]) >> _overlapDividerBits;
-                norm += (mixingPos[i]*mixingPos[i] + mixingPos[i + 1]*mixingPos[i + 1]) >> _overlapDividerBits;
-            }
-
-            // Normalize result by dividing by sqrt(norm) - this step is easiest 
-            // done using floating point operation
-            if (norm == 0) norm = 1; // to avoid div by zero
-            return (long) ((double) corr*short.MaxValue/Math.Sqrt(norm));
+            if (norm == 0) norm = 1;    // to avoid div by zero
+            return corr / Math.Sqrt(norm);
         }
     }
 }
