@@ -410,11 +410,10 @@ namespace SoundStretch
         /// </summary>
         public int GetLengthMs()
         {
-            int numSamples = GetNumSamples();
-            int sampleRate = GetSampleRate();
+            double numSamples = GetNumSamples();
+            double sampleRate = GetSampleRate();
 
-            Debug.Assert(numSamples < int.MaxValue/1000);
-            return (1000*numSamples/sampleRate);
+            return (int)(1000.0 * numSamples / sampleRate + 0.5);
         }
 
         /// <summary>
