@@ -60,12 +60,12 @@ namespace SoundTouch
             float wsum = 0;
             for (int i = firstPos; i <= lastPos; i++)
             {
-                sum += i*data[i];
+                sum += i * data[i];
                 wsum += data[i];
             }
 
             if (wsum < 1e-6) return 0;
-            return sum/wsum;
+            return sum / wsum;
         }
 
         /// <summary>
@@ -89,6 +89,36 @@ namespace SoundTouch
                 pos += direction;
             }
             return -1; // not found
+        }
+
+        /// <summary>
+        ///  Finds real 'top' of a peak hump from neighbourhood of the given 'peakpos'.
+        /// </summary>
+        /// <param name="data">Data vector.</param>
+        /// <param name="peakpos">Peak position index within the data vector.</param>
+        private int FindTop(float[] data, int peakpos)
+        {
+            float refvalue = data[peakpos];
+
+            // seek within ±10 points
+            int start = peakpos - 10;
+            if (start < _minPos) start = _minPos;
+            int end = peakpos + 10;
+            if (end > _maxPos) end = _maxPos;
+
+            for (int i = start; i <= end; i++)
+            {
+                if (data[i] > refvalue)
+                {
+                    peakpos = i;
+                    refvalue = data[i];
+                }
+            }
+
+            // failure if max value is at edges of seek range => it's not peak, it's at slope.
+            if ((peakpos == start) || (peakpos == end)) return 0;
+
+            return peakpos;
         }
 
         /// <summary>
@@ -210,22 +240,36 @@ namespace SoundTouch
             // Now check if the highest peak were in fact harmonic of the true base beat peak 
             // - sometimes the highest peak can be Nth harmonic of the true base peak yet 
             // just a slightly higher than the true base
+
+            int hp = (int)(highPeak + 0.5);
+
             for (i = 2; i < 10; i++)
             {
-                peakpos = (int) (highPeak/i + 0.5f);
+                double harmonic = i * 0.5;
+                peakpos = (int) (highPeak / harmonic + 0.5f);
                 if (peakpos < minPos) break;
 
-                // calculate mass-center of possible base peak
+                peakpos = FindTop(data, peakpos); // seek true local maximum index
+                if (peakpos == 0) continue; // no local max here
+
+                // calculate mass-center of possible harmonic peak
                 double peaktmp = GetPeakCenter(data, peakpos);
+
+                // accept harmonic peak if
+                // (a) it is found
+                // (b) is within ±4% of the expected harmonic interval
+                // (c) has at least half x-corr value of the max. peak
+
+                double diff = harmonic * peaktmp / highPeak;
+                if ((diff < 0.96) || (diff > 1.04)) continue;   // peak too afar from expected
 
                 // now compare to highest detected peak
                 var i1 = (int) (highPeak + 0.5);
                 var i2 = (int) (peaktmp + 0.5);
-                double tmp = 2*(data[i2] - data[i1])/(data[i2] + data[i1]);
-                if (Math.Abs(tmp) < 0.1)
+                if (data[i2] >= 0.5 * data[i1])
                 {
-                    // The highest peak is harmonic of almost as high base peak,
-                    // thus use the base peak instead
+                    // The harmonic is at least half as high primary peak,
+                    // thus use the harmonic peak instead
                     peak = peaktmp;
                 }
             }

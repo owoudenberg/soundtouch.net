@@ -62,7 +62,7 @@ namespace SoundTouch
         private const int MIN_BPM = 29;
 
         /// Maximum allowed BPM rate. Used to restrict accepted result below a reasonable limit.
-        private const int MAX_BPM = 230;
+        private const int MAX_BPM = 200;
 
         private const int INPUT_BLOCK_SAMPLES = 2048;
         private const int DECIMATED_BLOCK_SAMPLES = 256;
