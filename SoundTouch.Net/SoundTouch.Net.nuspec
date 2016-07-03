@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>SoundTouch.Net</id>
+    <version>1.9.2.0</version>
+    <title>SoundTouch.Net</title>
+    <authors>Olaf Woudenberg</authors>
+    <owners>Olaf Woudenberg</owners>
+    <licenseUrl>https://raw.githubusercontent.com/owoudenberg/soundtouch.net/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/owoudenberg/soundtouch.net</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/owoudenberg/soundtouch.net/master/logo.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The SoundTouch Library is originally written by Olli Parviainen in C++. Although a .NET wrapper library is available, this library aims to be a complete rewrite in C#.</description>
+    <releaseNotes>1.9.2:
+* Improved SoundTouch::flush() function so that it returns precisely the desired amount of samples for exact output duration control
+* Redesigned quickseek algorithm for improved sound quality when using the quickseek mode. The new quickseek algorithm can find 99% as good results as the default full-scan mode, while the quickseek algorithm is remarkable less CPU intensive.
+* Added adaptive integer divider scaling for improved sound quality when using integer processing algorithm
+* Added support for parallel computation support via .NET 4.0 TPL for better performance in multicore systems.
+* Added support for multi-channel audio processing
+* Added support for cubic and shannon interpolation for rate and pitch shift effects besides the original linear interpolation, to reduce aliasing at high frequencies due to interpolation. Cubic interpolation is used as default for floating point processing, and linear interpolation for integer processing.
+* Fixed bug in anti-alias filtering that limited stop-band attenuation to -10 dB instead of &lt;-50dB, and increased filter length from 32 to 64 taps to further reduce aliasing due to frequency folding.
+* Performance improvements in cross-correlation algorithm
+* Other bug and compatibility fixes
+</releaseNotes>
+    <copyright>Copyright 2016</copyright>
+    <tags>SoundTouch sound stretch tempo pitch rate</tags>
+  </metadata>
+</package>
