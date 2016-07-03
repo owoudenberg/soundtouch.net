@@ -281,6 +281,11 @@ namespace SoundTouch
             _samplesInBuffer = usedBytes / _channels;
         }
 
+        public int GetChannels()
+        {
+            return _channels;
+        }
+
         /// <summary>
         ///  Allow trimming (downwards) amount of samples in pipeline.
         /// </summary>

@@ -25,6 +25,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using SoundTouch.Utility;
 
 namespace SoundTouch
@@ -426,7 +427,7 @@ namespace SoundTouch
             Debug.Assert(Buffer.AvailableSamples >= (uint) (processSamples + WindowLen));
 
             ArrayPtr<float> pBuffer = Buffer.PtrBegin();
-            for (int offs = WindowStart; offs < WindowLen; offs ++)
+            Parallel.For(WindowStart, WindowLen, (int offs) =>
             {
                 double sum = 0.0;
                 for (int i = 0; i < processSamples; i ++)
@@ -435,7 +436,7 @@ namespace SoundTouch
                 }
 
                 Xcorr[offs] += (float) sum;
-            }
+            });
         }
 
         protected override int Decimate(ArrayPtr<float> dst, ArrayPtr<float> src, int numSamples)

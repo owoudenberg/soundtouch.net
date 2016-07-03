@@ -179,15 +179,29 @@ namespace SoundTouch
         /// </summary>
         private double GetPeakCenter(float[] data, int peakpos)
         {
+            float cutLevel;
+
             // find ground positions.
             int gp1 = FindGround(data, peakpos, -1);
             int gp2 = FindGround(data, peakpos, 1);
-
-            float groundLevel = 0.5f * (data[gp1] + data[gp2]);
+            
             float peakLevel = data[peakpos];
 
-            // calculate 70%-level of the peak
-            float cutLevel = 0.70f*peakLevel + 0.30f*groundLevel;
+            if (gp1 == gp2)
+            {
+                // avoid rounding errors when all are equal
+                Debug.Assert(gp1 == peakpos);
+                cutLevel = peakLevel;
+            }
+            else
+            {
+                // get average of the ground levels
+                float groundLevel = 0.5f*(data[gp1] + data[gp2]);
+
+                // calculate 70%-level of the peak
+                cutLevel = 0.70f*peakLevel + 0.30f*groundLevel;
+            }
+
             // find mid-level crossings
             int crosspos1 = FindCrossingLevel(data, cutLevel, peakpos, -1);
             int crosspos2 = FindCrossingLevel(data, cutLevel, peakpos, 1);

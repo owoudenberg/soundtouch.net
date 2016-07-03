@@ -64,6 +64,17 @@ namespace SoundStretch
         public short BitsPerSample;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WavFact
+    {
+        public const string FACT_STR = "fact";
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4, ArraySubType = UnmanagedType.U1)]
+        public char[] FactField;
+        public int FactLength;
+        public int FactSampleLength;
+    }
+
     /// <summary>WAV audio file 'data' section header</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WavData
@@ -81,6 +92,7 @@ namespace SoundStretch
     {
         public WavRiff Riff;
         public WavFormat Format;
+        public WavFact Fact;
         public WavData Data;
     }
 
@@ -280,6 +292,45 @@ namespace SoundStretch
                 return 0;
             }
 
+            if (label == WavFact.FACT_STR)
+            {
+                int nDump;
+
+                // 'fact' block 
+                _header.Fact.FactField = WavFact.FACT_STR.ToCharArray();
+
+                // read length of the fact field
+                int nLen;
+                if (_fileStream.Read(out nLen) != sizeof(int)) return -1;
+
+                // swap byte order if necessary
+                _endian.Swap32(ref nLen); // int fact_len;
+                _header.Fact.FactLength = nLen;
+
+                // calculate how much length differs from expected
+                nDump = nLen - (Marshal.SizeOf(_header.Fact) - 8);
+
+                // if format_len is larger than expected, read only as much data as we've space for
+                if (nDump > 0)
+                {
+                    nLen = Marshal.SizeOf(_header.Fact) - 8;
+                }
+
+                // read data
+                if (_fileStream.Read(out _header.Fact.FactSampleLength) != nLen) return -1;
+
+                // swap byte order if necessary
+                _endian.Swap32(ref _header.Fact.FactSampleLength);    // int sample_length;
+
+                // if fact_len is larger than expected, skip the extra data
+                if (nDump > 0)
+                {
+                    _fileStream.Seek(nDump, SeekOrigin.Current);
+                }
+
+                return 0;
+            }
+
             if (label == WavData.DATA_STR)
             {
                 // 'data' block
@@ -389,6 +440,7 @@ namespace SoundStretch
         public int GetNumSamples()
         {
             if (_header.Format.BytePerSample == 0) return 0;
+            if (_header.Format.Fixed > 1) return _header.Fact.FactSampleLength;
             return _header.Data.DataLen/_header.Format.BytePerSample;
         }
 

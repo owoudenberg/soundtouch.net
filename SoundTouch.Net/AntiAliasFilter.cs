@@ -24,6 +24,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using SoundTouch.Utility;
 
 namespace SoundTouch
@@ -60,8 +61,7 @@ namespace SoundTouch
             ArrayPtr<double> work = new double[_length];
             ArrayPtr<TSampleType> coeffs = new TSampleType[_length];
 
-            double fc2 = 2.0 * _cutoffFreq;
-            double wc = Math.PI * fc2;
+            double wc = 2.0*Math.PI*_cutoffFreq;
             double tempCoeff = (Math.PI * 2) / _length;
 
             double sum = 0;
@@ -73,7 +73,7 @@ namespace SoundTouch
                 double h;
                 if (temp != 0)
                 {
-                    h = fc2 * Math.Sin(temp) / temp; // sinc function
+                    h = Math.Sin(temp) / temp; // sinc function
                 }
                 else
                 {
@@ -102,8 +102,8 @@ namespace SoundTouch
 
             for (int i = 0; i < _length; i++)
             {
-                // scale & round to nearest integer
                 temp = work[i] * scaleCoeff;
+                // scale & round to nearest integer
                 temp += (temp >= 0) ? 0.5 : -0.5;
                 // ensure no overfloods
                 Debug.Assert(temp >= -32768 && temp <= 32767);
@@ -112,6 +112,8 @@ namespace SoundTouch
 
             // Set coefficients. Use divide factor 14 => divide result by 2^14 = 16384
             _firFilter.SetCoefficients(coeffs, _length, 14);
+
+            DebugSaveAntiAliasFilterCoefficients(coeffs, _length);
         }
 
         /// <summary>
@@ -122,6 +124,26 @@ namespace SoundTouch
         public int Evaluate(ArrayPtr<TSampleType> dst, ArrayPtr<TSampleType> src, int numSamples, int numChannels)
         {
             return _firFilter.Evaluate(dst, src, numSamples, numChannels);
+        }
+
+        public int Evaluate(FifoSampleBuffer<TSampleType> dest, FifoSampleBuffer<TSampleType> src)
+        {
+            ArrayPtr<TSampleType> pdest;
+            ArrayPtr<TSampleType> psrc;
+            int numSrcSamples;
+            int result;
+            int numChannels = src.GetChannels();
+
+            Debug.Assert(numChannels == dest.GetChannels());
+
+            numSrcSamples = src.AvailableSamples;
+            psrc = src.PtrBegin();
+            pdest = dest.PtrEnd(numSrcSamples);
+            result = _firFilter.Evaluate(pdest, psrc, numSrcSamples, numChannels);
+            src.ReceiveSamples(result);
+            dest.PutSamples(result);
+
+            return result;
         }
 
         /// <summary>
@@ -151,6 +173,20 @@ namespace SoundTouch
         {
             _length = newLength;
             CalculateCoeffs();
+        }
+
+        [Conditional("_DEBUG_SAVE_AAFILTER_COEFFICIENTS")]
+        private static void DebugSaveAntiAliasFilterCoefficients(ArrayPtr<TSampleType> coeffs, int len)
+        {
+            using (var file = File.Open("aa_filter_coeffs.txt", FileMode.Truncate))
+            using (var fptr = new StreamWriter(file))
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    var temp = coeffs[i];
+                    fptr.WriteLine(temp);
+                }
+            }
         }
     }
 }

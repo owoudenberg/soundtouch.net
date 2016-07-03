@@ -27,7 +27,7 @@ namespace SoundTouch.Utility
         /// <summary>
         /// Gets or sets the element at the specified index.
         /// </summary>
-        public T this[int index]
+        public T this[long index]
         {
             get { return _buffer[_index + index]; }
             set { _buffer[_index + index] = value; }

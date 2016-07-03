@@ -41,21 +41,21 @@ namespace SoundStretch
 {
     internal static class Program
     {
-        // Processing chunk size
-        private const int BUFF_SIZE = 2048;
+        // Processing chunk size (size chosen to be divisible by 2, 4, 6, 8, 10, 12, 14, 16 channels ...)
+        private const int BUFF_SIZE = 6720;
 
         private static readonly string[] HELLOTEXT = new[]
         {
             Environment.NewLine,
-            "   SoundStretch v{0} - C++ Version Written by Olli Parviainen 2001 - 2012",
+            "   SoundStretch v{0} - C++ Version Written by Olli Parviainen 2001 - 2015",
             Environment.NewLine,
-            "   SoundStretch v{0} - C# Version Written by Olaf Woudenberg 2011 - 2013",
+            "   SoundStretch v{0} - C# Version Written by Olaf Woudenberg 2011 - 2016",
             Environment.NewLine,
             "=============================================================================",
             Environment.NewLine,
             "author e-mail: <o.woudenberg",
             "@",
-            "mijnbytes.nl>",
+            "gmail.nl>",
             Environment.NewLine,
             "          WWW: http://www.surina.net/soundtouch\n",
             Environment.NewLine,

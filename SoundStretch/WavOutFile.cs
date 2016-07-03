@@ -120,6 +120,11 @@ namespace SoundStretch
             _header.Format.ByteRate = _header.Format.BytePerSample*sampleRate;
             _header.Format.SampleRate = sampleRate;
 
+            // fill in the 'fact' part...
+            _header.Fact.FactField = WavFact.FACT_STR.ToCharArray();
+            _header.Fact.FactLength = 4;
+            _header.Fact.FactSampleLength = 0;
+
             // fill in the 'data' part..
 
             // copy string 'data' to data_field
@@ -133,8 +138,9 @@ namespace SoundStretch
         private void FinishHeader()
         {
             // supplement the file length into the header structure
-            _header.Riff.PackageLength = _bytesWritten + 36;
+            _header.Riff.PackageLength = _bytesWritten + Marshal.SizeOf(typeof(WavHeader)) - Marshal.SizeOf(typeof(WavRiff)) + 4;
             _header.Data.DataLen = _bytesWritten;
+            _header.Fact.FactSampleLength = _bytesWritten/_header.Format.BytePerSample;
 
             WriteHeader();
         }
@@ -153,6 +159,8 @@ namespace SoundStretch
             _endian.Swap16(ref hdrTemp.Format.BytePerSample);
             _endian.Swap16(ref hdrTemp.Format.BitsPerSample);
             _endian.Swap32(ref hdrTemp.Data.DataLen);
+            _endian.Swap32(ref hdrTemp.Fact.FactLength);
+            _endian.Swap32(ref hdrTemp.Fact.FactSampleLength);
 
             // write the supplemented header in the beginning of the file
             _fileStream.Seek(0, SeekOrigin.Begin);

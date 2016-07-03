@@ -10,9 +10,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SoundTouch</RootNamespace>
     <AssemblyName>SoundTouch.Net</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -45,17 +46,23 @@
     <Compile Include="FirFilter.cs" />
     <Compile Include="FirFilterFloat.cs" />
     <Compile Include="FirFilterInteger.cs" />
+    <Compile Include="InterpolateCubic.cs" />
+    <Compile Include="InterpolateLinearFloat.cs" />
+    <Compile Include="InterpolateLinearInteger.cs" />
+    <Compile Include="InterpolateShannon.cs" />
     <Compile Include="PeakFinder.cs" />
     <Compile Include="RateTransposer.cs" />
-    <Compile Include="RateTransposerFloat.cs" />
-    <Compile Include="RateTransposerInteger.cs" />
     <Compile Include="SettingId.cs" />
     <Compile Include="SoundTouch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TimeStretch.cs" />
     <Compile Include="TimeStretchFloat.cs" />
     <Compile Include="TimeStretchInteger.cs" />
+    <Compile Include="TransposerBase.cs" />
+    <Compile Include="TransposerBaseFloat.cs" />
+    <Compile Include="TransposerBaseInteger.cs" />
     <Compile Include="Utility\ArrayPtr.cs" />
+    <Compile Include="Utility\RangeEnumerable.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

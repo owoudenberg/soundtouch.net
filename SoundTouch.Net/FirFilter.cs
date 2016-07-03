@@ -45,18 +45,21 @@ namespace SoundTouch
             Debug.Assert(_length > 0);
             Debug.Assert(_lengthDiv8 * 8 == _length);
             if (numSamples < _length)
-            {
                 return 0;
-            }
+
+#if !USE_MULTICH_ALWAYS
+            if (numChannels == 1)
+                return EvaluateFilterMono(dest, src, numSamples);
             if (numChannels == 2)
-            {
                 return EvaluateFilterStereo(dest, src, numSamples);
-            }
-            return EvaluateFilterMono(dest, src, numSamples);
+#endif
+            Debug.Assert(numChannels > 0);
+            return EvaluateFilterMulti(dest, src, numSamples, numChannels);
         }
 
         protected abstract int EvaluateFilterMono(ArrayPtr<TSampleType> dest, ArrayPtr<TSampleType> src, int numSamples);
         protected abstract int EvaluateFilterStereo(ArrayPtr<TSampleType> dest, ArrayPtr<TSampleType> src, int numSamples);
+        protected abstract int EvaluateFilterMulti(ArrayPtr<TSampleType> dest, ArrayPtr<TSampleType> src, int numSamples, int numChannels);
 
         public int GetLength()
         {

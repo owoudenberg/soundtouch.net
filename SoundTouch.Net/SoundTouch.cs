@@ -76,10 +76,10 @@ namespace SoundTouch
         where TLongSampleType : struct
     {
         /// <summary><c>SoundTouch</c> library version string</summary>
-        private const string SOUNDTOUCH_VERSION = "1.7.1";
+        private const string SOUNDTOUCH_VERSION = "1.9.2";
 
         /// <summary><c>SoundTouch</c> library version id</summary>
-        private const int SOUNDTOUCH_VERSION_ID = (10701);
+        private const int SOUNDTOUCH_VERSION_ID = (10902);
 
 
         /// <summary>Rate transposer class instance</summary>
@@ -91,23 +91,30 @@ namespace SoundTouch
         private bool _isSampleRateSet;
 
         /// <summary>Virtual pitch parameter. Effective rate & tempo are calculated from these parameters.</summary>
-        private float _virtualPitch;
+        private double _virtualPitch;
         /// <summary>Virtual tempo parameter. Effective rate & tempo are calculated from these parameters.</summary>
-        private float _virtualTempo;
+        private double _virtualTempo;
         /// <summary>Virtual rate parameter. Effective rate & tempo are calculated from these parameters.</summary>
-        private float _virtualRate;
+        private double _virtualRate;
+
+        /// Accumulator for how many samples in total will be expected as output vs. samples put in,
+        /// considering current processing settings.
+        double _samplesExpectedOut;
+
+        /// Accumulator for how many samples in total have been read out from the processing so far
+        long _samplesOutput;
 
         /// <summary>Number of channels</summary>
         private int _channels;
         /// <summary>Effective 'rate' value calculated from <see cref="_virtualRate"/>, <see cref="_virtualTempo"/> and <see cref="_virtualPitch"/></summary>
-        private float _rate;
+        private double _rate;
         /// <summary>Effective 'tempo' value calculated from <see cref="_virtualRate"/>, <see cref="_virtualTempo"/> and <see cref="_virtualPitch"/></summary>
-        private float _tempo;
+        private double _tempo;
 
         public SoundTouch()
         {
             // Initialize rate transposer and tempo changer instances
-            _rateTransposer = RateTransposer<TSampletype>.NewInstance();
+            _rateTransposer = new RateTransposer<TSampletype>();
             _stretch = TimeStretch<TSampletype, TLongSampleType>.NewInstance();
 
             SetOutPipe(_stretch);
@@ -119,6 +126,9 @@ namespace SoundTouch
             _virtualPitch = 1.0f;
 
             CalcEffectiveRateAndTempo();
+
+            _samplesExpectedOut = 0;
+            _samplesOutput = 0;
 
             _channels = 0;
             _isSampleRateSet = false;
@@ -136,9 +146,9 @@ namespace SoundTouch
             get { return SOUNDTOUCH_VERSION_ID; }
         }
 
-        private static bool TestFloatEqual(float a, float b)
+        private static bool TestDoubleEqual(double a, double b)
         {
-            return Math.Abs(a - b) < 1e-10;
+            return Math.Abs(a - b) < double.Epsilon;
         }
 
         /// <summary>
@@ -148,14 +158,14 @@ namespace SoundTouch
         /// </summary>
         private void CalcEffectiveRateAndTempo()
         {
-            float oldTempo = _tempo;
-            float oldRate = _rate;
+            double oldTempo = _tempo;
+            double oldRate = _rate;
 
             _tempo = _virtualTempo / _virtualPitch;
             _rate = _virtualPitch * _virtualRate;
 
-            if (!TestFloatEqual(_rate, oldRate)) _rateTransposer.SetRate(_rate);
-            if (!TestFloatEqual(_tempo, oldTempo)) _stretch.SetTempo(_tempo);
+            if (!TestDoubleEqual(_rate, oldRate)) _rateTransposer.SetRate(_rate);
+            if (!TestDoubleEqual(_tempo, oldTempo)) _stretch.SetTempo(_tempo);
             
 #if !SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER
             if (_rate <= 1.0)
@@ -167,7 +177,7 @@ namespace SoundTouch
                     var tempOut = _stretch.GetOutput();
                     tempOut.MoveSamples(Output);
                     // move samples in pitch transposer's store buffer to tempo changer's input
-                    _stretch.MoveSamples(_rateTransposer.GetStore());
+                    // deprecated : _stretch.MoveSamples(_rateTransposer.GetStore());
                     Output = _stretch;
                 }
             }
@@ -192,6 +202,7 @@ namespace SoundTouch
         /// </summary>
         public override void Clear()
         {
+            _samplesExpectedOut = 0;
             _rateTransposer.Clear();
             _stretch.Clear();
         }
@@ -208,37 +219,24 @@ namespace SoundTouch
         /// </remarks>
         public void Flush()
         {
-            var buff = new TSampletype[64 * 2]; // note: allocate 2*64 to cater 64 sample frames of stereo sound
+            var buff = new TSampletype[128 * _channels];
 
-            // check how many samples still await processing, and scale
-            // that by tempo & rate to get expected output sample count
-            int nUnprocessed = NumberOfUnprocessedSamples();
-            nUnprocessed = (int)((double)nUnprocessed / (_tempo * _rate) + 0.5);
-
-            int nOut = AvailableSamples;
-            nOut += nUnprocessed;       // ... and how many we expect there to be in the end
-
+            // how many samples are still expected to output
+            int numStillExpected = (int)((long)(_samplesExpectedOut + 0.5) - _samplesOutput);
+            
             // "Push" the last active samples out from the processing pipeline by
             // feeding blank samples into the processing pipeline until new, 
             // processed samples appear in the output (not however, more than 
-            // 8k samples in any case)
-            for (int i = 0; i < 128; i ++) 
+            // 24k samples in any case)
+            for (int i = 0; (numStillExpected > AvailableSamples) && (i < 200); i ++) 
             {
-                PutSamples(buff, 64);
-                if (AvailableSamples != nOut)
-                {
-                    // Enough new samples have appeared into the output!
-                    // As samples come from processing with bigger chunks, now truncate it
-                    // back to maximum "nOut" samples to improve duration accuracy 
-                    AdjustAmountOfSamples(nOut);
-
-                    // finish
-                    break;
-                }
+                PutSamples(buff, 128);
             }
 
-            // Clear working buffers
-            _rateTransposer.Clear();
+            AdjustAmountOfSamples(numStillExpected);
+
+            // Clear input buffers
+            // _rateTransposer.Clear();
             _stretch.ClearInput();
             // yet leave the 'tempoChanger' output intouched as that's where the
             // flushed samples are!
@@ -321,6 +319,10 @@ namespace SoundTouch
             if (_channels == 0)
                 throw new InvalidOperationException("SoundTouch : Number of channels not defined");
 
+            // accumulate how many samples are expected out from processing, given the current 
+            // processing setting
+            _samplesExpectedOut += (double)numSamples / ((double)_rate * (double)_tempo);
+
 #if !SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER
             if (_rate <= 1.0)
             {
@@ -345,8 +347,8 @@ namespace SoundTouch
         /// <exception cref="ArgumentOutOfRangeException"><c>numChannels</c> is out of range.</exception>
         public void SetChannels(int numChannels)
         {
-            if ((numChannels != 1) && (numChannels != 2))
-                throw new ArgumentOutOfRangeException("numChannels", numChannels, "Illegal number of channels");
+            /*if ((numChannels != 1) && (numChannels != 2))
+                throw new ArgumentOutOfRangeException("numChannels", numChannels, "Illegal number of channels");*/
 
             _channels = numChannels;
             _rateTransposer.SetChannels(numChannels);
@@ -357,7 +359,7 @@ namespace SoundTouch
         /// Sets new pitch control value. Original pitch = 1.0, smaller values
         /// represent lower pitches, larger values higher pitch.
         /// </summary>
-        public void SetPitch(float newPitch)
+        public void SetPitch(double newPitch)
         {
             _virtualPitch = newPitch;
             CalcEffectiveRateAndTempo();
@@ -367,9 +369,9 @@ namespace SoundTouch
         /// Sets pitch change in octaves compared to the original pitch  
         /// (-1.00 .. +1.00)
         /// </summary>
-        public void SetPitchOctaves(float newPitch)
+        public void SetPitchOctaves(double newPitch)
         {
-            _virtualPitch = (float)Math.Exp(0.69314718056f * newPitch);
+            _virtualPitch = Math.Exp(0.69314718056 * newPitch);
             CalcEffectiveRateAndTempo();
         }
 
@@ -377,16 +379,16 @@ namespace SoundTouch
         /// Sets pitch change in semi-tones compared to the original pitch
         /// (-12 .. +12)
         /// </summary>
-        public void SetPitchSemiTones(float newPitch)
+        public void SetPitchSemiTones(double newPitch)
         {
-            SetPitchOctaves(newPitch / 12.0f);
+            SetPitchOctaves(newPitch / 12.0);
         }
 
         /// <summary>
         /// Sets new rate control value. Normal rate = 1.0, smaller values
         /// represent slower rate, larger faster rates.
         /// </summary>
-        public void SetRate(float newRate)
+        public void SetRate(double newRate)
         {
             _virtualRate = newRate;
             CalcEffectiveRateAndTempo();
@@ -396,9 +398,9 @@ namespace SoundTouch
         /// Sets new rate control value as a difference in percents compared
         /// to the original rate (-50 .. +100 %)
         /// </summary>
-        public void SetRateChange(float newRate)
+        public void SetRateChange(double newRate)
         {
-            _virtualRate = 1.0f + 0.01f * newRate;
+            _virtualRate = 1.0 + 0.01 * newRate;
             CalcEffectiveRateAndTempo();
         }
 
@@ -468,7 +470,7 @@ namespace SoundTouch
         /// Sets new tempo control value. Normal tempo = 1.0, smaller values
         /// represent slower tempo, larger faster tempo.
         /// </summary>
-        public void SetTempo(float newTempo)
+        public void SetTempo(double newTempo)
         {
             _virtualTempo = newTempo;
             CalcEffectiveRateAndTempo();
@@ -478,10 +480,43 @@ namespace SoundTouch
         /// Sets new tempo control value as a difference in percents compared to
         /// the original tempo (-50 .. +100 %)
         /// </summary>
-        public void SetTempoChange(float newTempo)
+        public void SetTempoChange(double newTempo)
         {
             _virtualTempo = 1.0f + 0.01f * newTempo;
             CalcEffectiveRateAndTempo();
+        }
+
+        /// <summary>
+        /// Adjusts book-keeping so that given number of samples are removed
+        /// from beginning of the  sample buffer without copying them anywhere. 
+        ///
+        /// Used to reduce the number of samples in the buffer when accessing
+        /// the sample buffer directly with <see cref="PtrBegin"/> function.
+        /// </summary>
+        ///<param name="maxSamples">Remove this many samples from the beginning
+        ///of pipe.</param>
+        public override int ReceiveSamples(int maxSamples)
+        {
+            int ret = base.ReceiveSamples(maxSamples);
+            _samplesOutput += ret;
+            return ret;
+        }
+
+        /// <summary>
+        /// Output samples from beginning of the sample buffer. Copies requested
+        /// samples to  output buffer and removes them from the sample buffer.
+        /// If there are less than 
+        /// <paramref name="maxSamples"/> samples in the buffer, returns all
+        /// that available.
+        /// </summary>
+        /// <param name="output">Buffer where to copy output samples.</param>
+        /// <param name="maxSamples">How many samples to receive at max.</param>
+        /// <returns>Number of samples returned.</returns>
+        public override int ReceiveSamples(ArrayPtr<TSampletype> output, int maxSamples)
+        {
+            int ret = base.ReceiveSamples(output, maxSamples);
+            _samplesOutput += ret;
+            return ret;
         }
     }
 }

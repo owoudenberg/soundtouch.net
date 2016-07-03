@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 using System.Diagnostics;
+using System.Threading.Tasks;
 using SoundTouch.Utility;
 
 namespace SoundTouch
@@ -39,7 +40,7 @@ namespace SoundTouch
 
             int end = 2 * (numSamples - _length);
 
-            for (int j = 0; j < end; j += 2)
+            Parallel.ForEach(RangeEnumerable.Range(0, end, 2), (int j) =>
             {
                 long suml = 0, sumr = 0;
                 ArrayPtr<short> ptr = src + j;
@@ -47,14 +48,14 @@ namespace SoundTouch
                 for (int i = 0; i < _length; i += 4)
                 {
                     // loop is unrolled by factor of 4 here for efficiency
-                    suml += ptr[2 * i + 0] * _filterCoeffs[i + 0] +
-                            ptr[2 * i + 2] * _filterCoeffs[i + 1] +
-                            ptr[2 * i + 4] * _filterCoeffs[i + 2] +
-                            ptr[2 * i + 6] * _filterCoeffs[i + 3];
-                    sumr += ptr[2 * i + 1] * _filterCoeffs[i + 0] +
-                            ptr[2 * i + 3] * _filterCoeffs[i + 1] +
-                            ptr[2 * i + 5] * _filterCoeffs[i + 2] +
-                            ptr[2 * i + 7] * _filterCoeffs[i + 3];
+                    suml += ptr[2*i + 0]*_filterCoeffs[i + 0] +
+                            ptr[2*i + 2]*_filterCoeffs[i + 1] +
+                            ptr[2*i + 4]*_filterCoeffs[i + 2] +
+                            ptr[2*i + 6]*_filterCoeffs[i + 3];
+                    sumr += ptr[2*i + 1]*_filterCoeffs[i + 0] +
+                            ptr[2*i + 3]*_filterCoeffs[i + 1] +
+                            ptr[2*i + 5]*_filterCoeffs[i + 2] +
+                            ptr[2*i + 7]*_filterCoeffs[i + 3];
                 }
 
                 suml >>= _resultDivFactor;
@@ -65,35 +66,78 @@ namespace SoundTouch
                 // saturate to 16 bit integer limits
                 sumr = (sumr < short.MinValue) ? short.MinValue : (sumr > short.MaxValue) ? short.MaxValue : sumr;
 
-                dest[j] = (short)suml;
-                dest[j + 1] = (short)sumr;
-            }
+                dest[j] = (short) suml;
+                dest[j + 1] = (short) sumr;
+            });
             return numSamples - _length;
         }
+            
 
         protected override int EvaluateFilterMono(ArrayPtr<short> dest, ArrayPtr<short> src, int numSamples)
         {
             Debug.Assert(_length != 0);
 
             int end = numSamples - _length;
-            for (int j = 0; j < end; j++)
+            Parallel.For(0, end, (int j) =>
             {
+                ArrayPtr<short> pSrc = src + j;
                 long sum = 0;
                 for (int i = 0; i < _length; i += 4)
                 {
                     // loop is unrolled by factor of 4 here for efficiency
-                    sum += src[i + 0] * _filterCoeffs[i + 0] +
-                           src[i + 1] * _filterCoeffs[i + 1] +
-                           src[i + 2] * _filterCoeffs[i + 2] +
-                           src[i + 3] * _filterCoeffs[i + 3];
+                    sum += pSrc[i + 0]*_filterCoeffs[i + 0] +
+                           pSrc[i + 1]*_filterCoeffs[i + 1] +
+                           pSrc[i + 2]*_filterCoeffs[i + 2] +
+                           pSrc[i + 3]*_filterCoeffs[i + 3];
                 }
                 sum >>= _resultDivFactor;
                 // saturate to 16 bit integer limits
                 sum = (sum < short.MinValue) ? short.MinValue : (sum > short.MaxValue) ? short.MaxValue : sum;
-                dest[j] = (short)sum;
-                src++;
-            }
+                dest[j] = (short) sum;
+            });
             return end;
+        }
+
+        protected override int EvaluateFilterMulti(ArrayPtr<short> dest, ArrayPtr<short> src, int numSamples, int numChannels)
+        {
+            Debug.Assert(_length != 0);
+            Debug.Assert(src != null);
+            Debug.Assert(dest != null);
+            Debug.Assert(_filterCoeffs != null);
+            Debug.Assert(numChannels < 16);
+
+            var end = numChannels * (numSamples - _length);
+
+            Parallel.ForEach(RangeEnumerable.Range(0, end, numChannels), (int j) =>
+            {
+                long[] sums = new long[16];
+                uint c, i;
+
+                for (c = 0; c < numChannels; c++)
+                {
+                    sums[c] = 0;
+                }
+
+                var ptr = src + j;
+
+                for (i = 0; i < _length; i++)
+                {
+                    short coef = _filterCoeffs[i];
+                    for (c = 0; c < numChannels; c++)
+                    {
+                        sums[c] += ptr[0]*coef;
+                        ptr++;
+                    }
+                }
+
+                for (c = 0; c < numChannels; c++)
+                {
+                    sums[c] >>= _resultDivFactor;
+                    dest[j + c] = (short) sums[c];
+                }
+            });
+
+            return numSamples - _length;
         }
     }
 }
