@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SoundStretch": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\Olaf\\Desktop\\Downloads\\Personal\\Music\\Bloodpressure.wav C:\\Users\\Olaf\\Desktop\\Downloads\\Personal\\Music\\Stretched.wav -speech -pitch=+5"
+    }
+  }
+}

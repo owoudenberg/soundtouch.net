@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Microsoft Managed Recommended Rules" Description="These rules focus on the most critical problems in your code, including potential security holes, application crashes, and other important logic and design errors. It is recommended to include this rule set in any custom rule set you create for your projects." ToolsVersion="16.0">
+  <Localization ResourceAssembly="Microsoft.VisualStudio.CodeAnalysis.RuleSets.Strings.dll" ResourceBaseName="Microsoft.VisualStudio.CodeAnalysis.RuleSets.Strings.Localized">
+    <Name Resource="MinimumRecommendedRules_Name" />
+    <Description Resource="MinimumRecommendedRules_Description" />
+  </Localization>
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <Rule Id="CA1303" Action="Info" />
+    <Rule Id="CA1309" Action="Info" />
+    <Rule Id="CA1717" Action="Warning" />
+    <Rule Id="CA2210" Action="Warning" />
+  </Rules>
+  <Rules AnalyzerId="Microsoft.CodeQuality.Analyzers" RuleNamespace="Microsoft.CodeQuality.Analyzers">
+    <Rule Id="CA1031" Action="Info" />
+    <Rule Id="CA1050" Action="Warning" />
+    <Rule Id="CA1707" Action="None" />
+  </Rules>
+  <Rules AnalyzerId="Microsoft.NetCore.Analyzers" RuleNamespace="Microsoft.NetCore.Analyzers">
+    <Rule Id="CA1303" Action="Info" />
+  </Rules>
+  <Rules AnalyzerId="SonarAnalyzer.CSharp" RuleNamespace="SonarAnalyzer.CSharp">
+    <Rule Id="S104" Action="Info" />
+    <Rule Id="S105" Action="Warning" />
+    <Rule Id="S1192" Action="Warning" />
+    <Rule Id="S127" Action="Warning" />
+    <Rule Id="S1449" Action="Warning" />
+    <Rule Id="S1696" Action="Warning" />
+    <Rule Id="S1697" Action="Warning" />
+    <Rule Id="S1858" Action="Warning" />
+    <Rule Id="S2068" Action="Warning" />
+    <Rule Id="S2070" Action="Warning" />
+    <Rule Id="S2156" Action="Warning" />
+    <Rule Id="S2302" Action="Warning" />
+    <Rule Id="S2325" Action="Warning" />
+    <Rule Id="S2931" Action="Warning" />
+    <Rule Id="S3216" Action="Info" />
+    <Rule Id="S3253" Action="Warning" />
+    <Rule Id="S3441" Action="Warning" />
+    <Rule Id="S3872" Action="Warning" />
+    <Rule Id="S3902" Action="Warning" />
+    <Rule Id="S4059" Action="Warning" />
+  </Rules>
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="SA1101" Action="None" />
+    <Rule Id="SA1116" Action="None" />
+    <Rule Id="SA1201" Action="Error" />
+    <Rule Id="SA1208" Action="Error" />
+    <Rule Id="SA1210" Action="Info" />
+    <Rule Id="SA1309" Action="None" />
+    <Rule Id="SA1310" Action="None" />
+    <Rule Id="SA1311" Action="None" />
+    <Rule Id="SA1413" Action="None" />
+    <Rule Id="SA1503" Action="None" />
+    <Rule Id="SA1600" Action="None" />
+    <Rule Id="SA1601" Action="Info" />
+    <Rule Id="SA1602" Action="Info" />
+    <Rule Id="SA1610" Action="None" />
+    <Rule Id="SA1611" Action="Info" />
+    <Rule Id="SA1615" Action="Info" />
+    <Rule Id="SA1633" Action="Error" />
+    <Rule Id="SA1634" Action="None" />
+    <Rule Id="SA1635" Action="None" />
+    <Rule Id="SA1636" Action="None" />
+    <Rule Id="SA1637" Action="None" />
+    <Rule Id="SA1638" Action="None" />
+    <Rule Id="SA1640" Action="None" />
+    <Rule Id="SA1641" Action="None" />
+    <Rule Id="SX1309" Action="Warning" />
+  </Rules>
+</RuleSet>
