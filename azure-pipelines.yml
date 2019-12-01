@@ -32,12 +32,13 @@ steps:
   inputs:
     command: build
     projects: '**/*.sln'
-    arguments: '--configuration Release'
+    arguments: '--configuration $(BuildConfiguration)'
 
 - task: DotNetCoreCLI@2
   inputs:
     command: pack
     arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+    nobuild: true
 
 - task: PublishBuildArtifacts@1
   inputs:
