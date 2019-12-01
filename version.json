@@ -1,16 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/AArnott/Nerdbank.GitVersioning/master/src/NerdBank.GitVersioning/version.schema.json",
-  "version": "2.1.2-beta",
+  "version": "2.2.0-beta",
+  "nuGetPackageVersion": {
+    "semVer": 2.0
+  },
   "publicReleaseRefSpec": [
     "^refs/heads/master$",
     "^refs/heads/develop$",
     "^refs/heads/release/\\d+\\.\\d+\\.\\d+$"
   ],
-  "nugetPackageVersion": {
-    "semVer": 2
-  },
   "cloudBuild": {
-    "setVersionVariables": true,
     "buildNumber": {
       "enabled": true
     }
