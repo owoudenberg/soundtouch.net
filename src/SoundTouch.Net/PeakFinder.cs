@@ -118,15 +118,14 @@ namespace SoundTouch
         /// <summary>
         /// Calculates the mass center between given vector items.
         /// </summary>
-        /// <param name="data">Data vector.</param>
         [Pure]
-        private static double CalcMassCenter(in ReadOnlySpan<float> data)
+        private static double CalcMassCenter(in ReadOnlySpan<float> data, int firstPos, int lastPos)
         {
             int i;
 
             float sum = 0;
             float wsum = 0;
-            for (i = 0; i <= data.Length; i++)
+            for (i = firstPos; i <= lastPos; i++)
             {
                 sum += i * data[i];
                 wsum += data[i];
@@ -290,7 +289,7 @@ namespace SoundTouch
                 return 0;   // no crossing, no peak..
 
             // calculate mass center of the peak surroundings
-            return CalcMassCenter(data.Slice(crossPosition1, crossPosition2));
+            return CalcMassCenter(data, crossPosition1, crossPosition2);
         }
     }
 }
