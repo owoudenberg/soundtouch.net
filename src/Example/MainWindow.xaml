@@ -21,8 +21,14 @@
     <TextBlock HorizontalAlignment="Left" Margin="185,55,0,0" Text="%" VerticalAlignment="Top" TextAlignment="Right"/>
 
     <TextBlock HorizontalAlignment="Left" Margin="64,85,0,0" Text="Pitch:" VerticalAlignment="Top" TextAlignment="Right"/>
-    <TextBox HorizontalAlignment="Left" Height="23" Margin="107,85,0,0" VerticalAlignment="Top" Width="75" TextAlignment="Center" Text="{Binding Pitch, Mode=TwoWay}" PreviewKeyDown="OnUpdateBinding"/>
+    <TextBox HorizontalAlignment="Left" Height="23" Margin="107,85,0,0" VerticalAlignment="Top" Width="50" TextAlignment="Center" Text="{Binding Pitch, Mode=TwoWay}" PreviewKeyDown="OnUpdateBinding"/>
+    <ToggleButton x:Name="btnPitchToggle" HorizontalAlignment="Left" Height="23" Margin="159,85,0,0" VerticalAlignment="Top" Width="23" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Content="V" />
     <TextBlock HorizontalAlignment="Left" Margin="185,85,0,0" Text="semitones" VerticalAlignment="Top" TextAlignment="Right"/>
+    <Popup IsOpen="{Binding ElementName=btnPitchToggle, Path=IsChecked, Mode=TwoWay}" StaysOpen="False" Placement="Bottom" PlacementTarget="{Binding ElementName=btnPitchToggle}">
+      <Border Background="{x:Static SystemColors.WindowBrush}" BorderBrush="{x:Static SystemColors.WindowFrameBrush}" BorderThickness="1">
+        <Slider Width="250" Minimum="-12" Maximum="12" Value="{Binding Path=Pitch, Mode=TwoWay}" Margin="4" />
+      </Border>
+    </Popup>
 
     <TextBlock HorizontalAlignment="Left" Margin="66,116,0,0" Text="Rate:" VerticalAlignment="Top" TextAlignment="Right"/>
     <TextBox HorizontalAlignment="Left" Height="23" Margin="107,116,0,0" VerticalAlignment="Top" Width="75" TextAlignment="Center" Text="{Binding Rate, Mode=TwoWay}" PreviewKeyDown="OnUpdateBinding"/>
