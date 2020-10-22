@@ -315,22 +315,11 @@ namespace SoundTouch
 
             corr = norm = 0;
 
-            // Same routine for stereo and mono. For Stereo, unroll by factor of 2.
-            // For mono it's same routine yet unrollsd by factor of 4.
-            for (i = 0; i < _channels * _overlapLength; i += 4)
+            // Same routine for stereo and mono.
+            for (i = 0; i < _channels * _overlapLength; i++)
             {
-                corr += (mixingPos[i] * compare[i]) +
-                        (mixingPos[i + 1] * compare[i + 1]);
-
-                norm += (mixingPos[i] * mixingPos[i]) +
-                        (mixingPos[i + 1] * mixingPos[i + 1]);
-
-                // unroll the loop for better CPU efficiency:
-                corr += (mixingPos[i + 2] * compare[i + 2]) +
-                        (mixingPos[i + 3] * compare[i + 3]);
-
-                norm += (mixingPos[i + 2] * mixingPos[i + 2]) +
-                        (mixingPos[i + 3] * mixingPos[i + 3]);
+                corr += mixingPos[i] * compare[i];
+                norm += mixingPos[i] * mixingPos[i];
             }
 
             anorm = norm;
@@ -353,14 +342,10 @@ namespace SoundTouch
                 }
             }
 
-            // Same routine for stereo and mono. For Stereo, unroll by factor of 2.
-            // For mono it's same routine yet unrollsd by factor of 4.
-            for (i = 0; i < _channels * _overlapLength; i += 4)
+            // Same routine for stereo and mono.
+            for (i = 0; i < _channels * _overlapLength; i++)
             {
-                corr += (mixingPos[i] * compare[i]) +
-                        (mixingPos[i + 1] * compare[i + 1]) +
-                        (mixingPos[i + 2] * compare[i + 2]) +
-                        (mixingPos[i + 3] * compare[i + 3]);
+                corr += mixingPos[i] * compare[i];
             }
 
             // update normalizer with last samples of this round

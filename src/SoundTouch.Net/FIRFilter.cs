@@ -106,24 +106,17 @@ namespace SoundTouch
                 double sumLeft = 0, sumRight = 0;
                 ReadOnlySpan<float> ptr = src.Slice(j);
 
-                for (int i = 0; i < Length; i += 4)
+                for (int i = 0; i < Length; i++)
                 {
-                    // loop is unrolled by factor of 4 here for efficiency
-                    sumRight += (ptr[(2 * i) + 0] * _filterCoeffs[i + 0]) +
-                            (ptr[(2 * i) + 2] * _filterCoeffs[i + 1]) +
-                            (ptr[(2 * i) + 4] * _filterCoeffs[i + 2]) +
-                            (ptr[(2 * i) + 6] * _filterCoeffs[i + 3]);
-                    sumLeft += (ptr[(2 * i) + 1] * _filterCoeffs[i + 0]) +
-                            (ptr[(2 * i) + 3] * _filterCoeffs[i + 1]) +
-                            (ptr[(2 * i) + 5] * _filterCoeffs[i + 2]) +
-                            (ptr[(2 * i) + 7] * _filterCoeffs[i + 3]);
+                    sumLeft += ptr[2 * i] * _filterCoeffs[i];
+                    sumRight += ptr[(2 * i) + 1] * _filterCoeffs[i];
                 }
 
                 sumRight *= dScaler;
                 sumLeft *= dScaler;
 
-                dest[j] = (float)sumRight;
-                dest[j + 1] = (float)sumLeft;
+                dest[j] = (float)sumLeft;
+                dest[j + 1] = (float)sumRight;
             }
 
             return numSamples - Length;
@@ -146,13 +139,9 @@ namespace SoundTouch
                 ReadOnlySpan<float> pSrc = src.Slice(j);
 
                 double sum = 0;
-                for (int i = 0; i < Length; i += 4)
+                for (int i = 0; i < Length; i++)
                 {
-                    // loop is unrolled by factor of 4 here for efficiency
-                    sum += (pSrc[i + 0] * _filterCoeffs[i + 0]) +
-                           (pSrc[i + 1] * _filterCoeffs[i + 1]) +
-                           (pSrc[i + 2] * _filterCoeffs[i + 2]) +
-                           (pSrc[i + 3] * _filterCoeffs[i + 3]);
+                    sum += pSrc[i] * _filterCoeffs[i];
                 }
 
                 sum *= dScaler;
