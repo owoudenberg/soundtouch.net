@@ -315,8 +315,11 @@ namespace SoundTouch
 
             corr = norm = 0;
 
+            // hint compiler autovectorization that loop length is divisible by 8
+            int ilength = (_channels * _overlapLength) & -8;
+
             // Same routine for stereo and mono.
-            for (i = 0; i < _channels * _overlapLength; i++)
+            for (i = 0; i < ilength; i++)
             {
                 corr += mixingPos[i] * compare[i];
                 norm += mixingPos[i] * mixingPos[i];
@@ -342,8 +345,11 @@ namespace SoundTouch
                 }
             }
 
+            // hint compiler autovectorization that loop length is divisible by 8
+            int ilength = (_channels * _overlapLength) & -8;
+
             // Same routine for stereo and mono.
-            for (i = 0; i < _channels * _overlapLength; i++)
+            for (i = 0; i < ilength; i++)
             {
                 corr += mixingPos[i] * compare[i];
             }

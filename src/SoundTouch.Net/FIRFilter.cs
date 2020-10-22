@@ -33,12 +33,14 @@ namespace SoundTouch
 
         // Memory for filter coefficients
         private float[]? _filterCoeffs;
+        private float[]? _filterCoeffsStereo;
 
         public FirFilter()
         {
             _resultDivider = 0;
             Length = 0;
             _filterCoeffs = null;
+            _filterCoeffsStereo = null;
         }
 
         // Number of FIR filter taps
@@ -56,8 +58,20 @@ namespace SoundTouch
             // Result divider factor in 2^k format
             _resultDivider = (float)Math.Pow(2.0, resultDivFactor);
 
+            double scale = 1.0 / _resultDivider;
+
             _filterCoeffs = new float[Length];
-            coeffs.CopyTo(_filterCoeffs);
+            _filterCoeffsStereo = new float[Length * 2];
+
+            for (int i = 0; i < Length; i++)
+            {
+                _filterCoeffs[i] = (float)(coeffs[i] * scale);
+
+                // create also stereo set of filter coefficients: this allows compiler
+                // to autovectorize filter evaluation much more efficiently
+                _filterCoeffsStereo[2 * i] = (float)(coeffs[i] * scale);
+                _filterCoeffsStereo[(2 * i) + 1] = (float)(coeffs[i] * scale);
+            }
         }
 
         /// <summary>
@@ -92,34 +106,30 @@ namespace SoundTouch
         [Pure]
         protected virtual int EvaluateFilterStereo(in Span<float> dest, in ReadOnlySpan<float> src, int numSamples)
         {
-            if (Length <= 0 || _filterCoeffs is null)
+            if (Length <= 0 || _filterCoeffsStereo is null)
                 throw new InvalidOperationException(Strings.InvalidOperation_CoefficientsNotInitialized);
 
-            // when using floating point samples, use a scaler instead of a divider
-            // because division is much slower operation than multiplying.
-            double dScaler = 1.0 / _resultDivider;
+            // hint compiler autovectorization that loop length is divisible by 8
+            int ilength = Length & -8;
 
-            var end = 2 * (numSamples - Length);
+            var end = 2 * (numSamples - ilength);
 
             for (int j = 0; j < end; j += 2)
             {
                 double sumLeft = 0, sumRight = 0;
                 ReadOnlySpan<float> ptr = src.Slice(j);
 
-                for (int i = 0; i < Length; i++)
+                for (int i = 0; i < ilength; i++)
                 {
-                    sumLeft += ptr[2 * i] * _filterCoeffs[i];
-                    sumRight += ptr[(2 * i) + 1] * _filterCoeffs[i];
+                    sumLeft += ptr[2 * i] * _filterCoeffsStereo[2 * i];
+                    sumRight += ptr[(2 * i) + 1] * _filterCoeffsStereo[(2 * i) + 1];
                 }
-
-                sumRight *= dScaler;
-                sumLeft *= dScaler;
 
                 dest[j] = (float)sumLeft;
                 dest[j + 1] = (float)sumRight;
             }
 
-            return numSamples - Length;
+            return numSamples - ilength;
         }
 
         [Pure]
@@ -128,23 +138,21 @@ namespace SoundTouch
             if (Length <= 0 || _filterCoeffs is null)
                 throw new InvalidOperationException(Strings.InvalidOperation_CoefficientsNotInitialized);
 
-            // when using floating point samples, use a scaler instead of a divider
-            // because division is much slower operation than multiplying.
-            double dScaler = 1.0 / _resultDivider;
+            // hint compiler autovectorization that loop length is divisible by 8
+            int ilength = Length & -8;
 
-            var end = numSamples - Length;
+            var end = numSamples - ilength;
 
             for (int j = 0; j < end; j++)
             {
                 ReadOnlySpan<float> pSrc = src.Slice(j);
 
                 double sum = 0;
-                for (int i = 0; i < Length; i++)
+                for (int i = 0; i < ilength; i++)
                 {
                     sum += pSrc[i] * _filterCoeffs[i];
                 }
 
-                sum *= dScaler;
                 dest[j] = (float)sum;
             }
 
@@ -158,11 +166,10 @@ namespace SoundTouch
             if (Length <= 0 || _filterCoeffs is null)
                 throw new InvalidOperationException(Strings.InvalidOperation_CoefficientsNotInitialized);
 
-            // when using floating point samples, use a scaler instead of a divider
-            // because division is much slower operation than multiplying.
-            double dScaler = 1.0 / _resultDivider;
+            // hint compiler autovectorization that loop length is divisible by 8
+            int ilength = Length & -8;
 
-            int end = numChannels * (numSamples - Length);
+            int end = numChannels * (numSamples - ilength);
 
             for (int j = 0; j < end; j += numChannels)
             {
@@ -177,7 +184,7 @@ namespace SoundTouch
 
                 ptr = src.Slice(j);
 
-                for (i = 0; i < Length; i++)
+                for (i = 0; i < ilength; i++)
                 {
                     float coef = _filterCoeffs[i];
                     for (c = 0; c < numChannels; c++)
@@ -189,12 +196,11 @@ namespace SoundTouch
 
                 for (c = 0; c < numChannels; c++)
                 {
-                    sums[c] *= dScaler;
                     dest[j + c] = (float)sums[c];
                 }
             }
 
-            return numSamples - Length;
+            return numSamples - ilength;
         }
     }
 }
