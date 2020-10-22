@@ -48,6 +48,8 @@ namespace SoundTouch
             _fract = 0;
         }
 
+        public override int Latency => 3;
+
         protected override void ResetRegisters() => _fract = 0;
 
         protected override int TransposeMono(in Span<float> dest, in ReadOnlySpan<float> src, ref int srcSamples)

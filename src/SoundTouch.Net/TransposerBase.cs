@@ -40,6 +40,8 @@ namespace SoundTouch
 
         public int NumberOfChannels { get; private set; }
 
+        public virtual int Latency => 0;
+
         // static factory function
         public static TransposerBase CreateInstance()
         {

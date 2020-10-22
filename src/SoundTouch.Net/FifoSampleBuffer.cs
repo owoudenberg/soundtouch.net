@@ -205,6 +205,12 @@ namespace SoundTouch
             return _samplesInBuffer;
         }
 
+        public void AddSilent(int numSamples)
+        {
+            PtrEnd(numSamples).Slice(0, numSamples * _channels).Clear();
+            _samplesInBuffer += numSamples;
+        }
+
         /// <summary>
         /// Rewind the buffer by moving data from position pointed by 'bufferPos' to real
         /// beginning of the buffer.

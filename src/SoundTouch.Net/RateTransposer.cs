@@ -78,6 +78,7 @@ namespace SoundTouch
             // Instantiates the anti-alias filter
             _pAAFilter = new AntiAliasFilter(64);
             _transposer = TransposerBase.CreateInstance();
+            Clear();
         }
 
         /// <summary>
@@ -88,7 +89,7 @@ namespace SoundTouch
         /// <summary>
         /// Gets the approximate initial input-output latency.
         /// </summary>
-        public int Latency => _useAAFilter ? _pAAFilter.Length : 0;
+        public int Latency => _transposer.Latency + (_useAAFilter ? _pAAFilter.Length / 2 : 0);
 
         /// <summary>
         /// Returns the output buffer object.
@@ -161,6 +162,10 @@ namespace SoundTouch
             _outputBuffer.Clear();
             _midBuffer.Clear();
             _inputBuffer.Clear();
+
+            // prefill buffer to avoid losing first samples at beginning of stream
+            int prefil = Latency;
+            _inputBuffer.AddSilent(prefil);
         }
 
         /// <summary>
