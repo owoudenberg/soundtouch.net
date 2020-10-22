@@ -420,7 +420,7 @@ namespace SoundTouch
 
             for (offs = _windowStart; offs < _windowLen; offs++)
             {
-                double sum = 0;
+                float sum = 0;
                 for (int i = 0; i < process_samples; i++)
                 {
                     sum += tmp[i] * pBuffer[i + offs]; // scaling the sub-result shouldn't be necessary
@@ -538,7 +538,7 @@ namespace SoundTouch
 
             for (int offs = _windowStart; offs < _windowLen; offs++)
             {
-                double sum = 0;
+                float sum = 0;
                 for (int i = 0; i < process_samples; i++)
                 {
                     sum += tmp[i] * pBuffer[offs + i];
