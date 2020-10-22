@@ -152,7 +152,7 @@ namespace SoundTouch
             Debug.Assert(peakLevel >= level, "peakLevel >= level");
 
             var position = peakPosition;
-            while ((position >= _minPosition) && (position < _maxPosition))
+            while ((position >= _minPosition) && (position + direction < _maxPosition))
             {
                 if (data[position + direction] < level)
                     return position;   // crossing found
