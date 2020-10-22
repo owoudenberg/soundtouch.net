@@ -139,7 +139,7 @@ namespace SoundTouch
         /// <param name="numSamples">Number of samples to insert.</param>
         public override void PutSamples(in ReadOnlySpan<float> samples, int numSamples)
         {
-            var dest = PtrEnd(samples.Length);
+            var dest = PtrEnd(numSamples);
             samples.Slice(0, numSamples * _channels).CopyTo(dest);
 
             _samplesInBuffer += numSamples;
