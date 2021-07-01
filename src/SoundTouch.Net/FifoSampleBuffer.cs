@@ -205,6 +205,10 @@ namespace SoundTouch
             return _samplesInBuffer;
         }
 
+        /// <summary>
+        /// Add silence to the end of the buffer.
+        /// </summary>
+        /// <param name="numSamples">Number of samples of silence.</param>
         public void AddSilent(int numSamples)
         {
             PtrEnd(numSamples).Slice(0, numSamples * _channels).Clear();
