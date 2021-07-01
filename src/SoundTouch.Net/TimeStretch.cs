@@ -752,7 +752,7 @@ namespace SoundTouch
                     // Adjust processing offset at beginning of track by not perform initial overlapping
                     // and compensating that in the 'input buffer skip' calculation
                     _isBeginning = false;
-                    int skip = (int)((_tempo * _overlapLength) + 0.5);
+                    int skip = (int)((_tempo * _overlapLength) + (0.5 * _seekLength) + 0.5);
 
 #if SOUNDTOUCH_ALLOW_NONEXACT_SIMD_OPTIMIZATION
 #if SOUNDTOUCH_ALLOW_SSE
