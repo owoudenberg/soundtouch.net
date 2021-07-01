@@ -4,7 +4,7 @@
     <Platform>AnyCPU</Platform>
     <LangVersion>8.0</LangVersion>
     <IsTestProject>$(MSBuildProjectName.Contains('Tests'))</IsTestProject>
-    <DebugType>embedded</DebugType>
+    <DebugType>portable</DebugType>
     <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)analyzers.ruleset</CodeAnalysisRuleSet>
 
     <Authors>Olaf Woudenberg</Authors>
