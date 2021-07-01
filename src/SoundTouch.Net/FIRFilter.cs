@@ -28,16 +28,12 @@ namespace SoundTouch
 
     internal class FirFilter
     {
-        // Result divider value.
-        private float _resultDivider;
-
         // Memory for filter coefficients
         private float[]? _filterCoeffs;
         private float[]? _filterCoeffsStereo;
 
         public FirFilter()
         {
-            _resultDivider = 0;
             Length = 0;
             _filterCoeffs = null;
             _filterCoeffsStereo = null;
@@ -56,9 +52,9 @@ namespace SoundTouch
             Length = coeffs.Length;
 
             // Result divider factor in 2^k format
-            _resultDivider = (float)Math.Pow(2.0, resultDivFactor);
+            var resultDivider = (float)Math.Pow(2.0, resultDivFactor);
 
-            double scale = 1.0 / _resultDivider;
+            double scale = 1.0 / resultDivider;
 
             _filterCoeffs = new float[Length];
             _filterCoeffsStereo = new float[Length * 2];

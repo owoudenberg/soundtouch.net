@@ -81,11 +81,6 @@ namespace SoundTouch
             _bAutoSeqSetting = true;
             _bAutoSeekSetting = true;
 
-            _maxnorm = 0;
-            _maxnormf = 1e8f;
-
-            _skipFract = 0;
-
             _tempo = 1.0f;
             SetParameters(44100, Defaults.SEQUENCE_MS, Defaults.SEEKWINDOW_MS, Defaults.OVERLAP_MS);
             SetTempo(1.0f);
@@ -140,6 +135,11 @@ namespace SoundTouch
             _inputBuffer.Clear();
             ClearMidBuffer();
             _isBeginning = true;
+
+            _maxnorm = 0;
+            _maxnormf = 1e8f;
+
+            _skipFract = 0;
         }
 
         /// <summary>
@@ -752,7 +752,7 @@ namespace SoundTouch
                     // Adjust processing offset at beginning of track by not perform initial overlapping
                     // and compensating that in the 'input buffer skip' calculation
                     _isBeginning = false;
-                    int skip = (int)((_tempo * _overlapLength) + 0.5);
+                    int skip = (int)((_tempo * _overlapLength) + (0.5 * _seekLength) + 0.5);
 
 #if SOUNDTOUCH_ALLOW_NONEXACT_SIMD_OPTIMIZATION
 #if SOUNDTOUCH_ALLOW_SSE
@@ -768,7 +768,10 @@ namespace SoundTouch
 #endif
 #endif
                     _skipFract -= skip;
-                    Debug.Assert(_nominalSkip >= -_skipFract, "_nominalSkip >= -_skipFract");
+                    if (_skipFract <= -_nominalSkip)
+                    {
+                        _skipFract = -_nominalSkip;
+                    }
                 }
 
                 // ... then copy sequence samples from 'inputBuffer' to output:

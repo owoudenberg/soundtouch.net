@@ -109,6 +109,7 @@ namespace SoundTouch
 #if !SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER
             // Disable Anti-alias filter if desirable to avoid click at rate change zero value crossover
             _useAAFilter = newMode;
+            Clear();
 #endif
         }
 
@@ -162,6 +163,7 @@ namespace SoundTouch
             _outputBuffer.Clear();
             _midBuffer.Clear();
             _inputBuffer.Clear();
+            _transposer.ResetRegisters();
 
             // prefill buffer to avoid losing first samples at beginning of stream
             int prefil = Latency;

@@ -30,19 +30,19 @@ namespace SoundTouch
     public enum SettingId
     {
         /// <summary>
-        /// Enable/disable anti-alias filter in pitch transposer (0 = disable)
+        /// Enable/disable anti-alias filter in pitch transposer (0 = disable).
         /// </summary>
         UseAntiAliasFilter = 0,
 
         /// <summary>
-        /// Pitch transposer anti-alias filter length (8 .. 128 taps, default = 32)
+        /// Pitch transposer anti-alias filter length (8 .. 128 taps, default = 32).
         /// </summary>
         AntiAliasFilterLength = 1,
 
         /// <summary>
         /// Enable/disable quick seeking algorithm in tempo changer routine
         /// (enabling quick seeking lowers CPU utilization but causes a minor sound
-        ///  quality compromising)
+        ///  quality compromising).
         /// </summary>
         UseQuickSeek = 2,
 
@@ -135,7 +135,7 @@ namespace SoundTouch
         /// <para>
         /// This also means that average latency during stream processing is
         /// <see cref="InitialLatency"/>-<see cref="NominalOutputSequence"/>/2, in the
-        /// above example case 5509-3969/2 = 3524 samples
+        /// above example case 5509-3969/2 = 3524 samples.
         /// </para>
         /// </summary>
         /// <remarks>

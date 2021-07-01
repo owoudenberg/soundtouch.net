@@ -6,6 +6,8 @@
     <IsTestProject>$(MSBuildProjectName.Contains('Tests'))</IsTestProject>
     <DebugType>portable</DebugType>
     <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)analyzers.ruleset</CodeAnalysisRuleSet>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)../SoundTouch.snk</AssemblyOriginatorKeyFile>
 
     <Authors>Olaf Woudenberg</Authors>
     <Owners>Olaf Woudenberg</Owners>

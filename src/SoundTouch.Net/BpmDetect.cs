@@ -428,7 +428,7 @@ namespace SoundTouch
 
                 _xcorr[offs] *= xcorr_decay; // decay 'xcorr' here with suitable time constant.
 
-                _xcorr[offs] += (float)Math.Abs(sum);
+                _xcorr[offs] += Math.Abs(sum);
             }
         }
 
@@ -544,7 +544,7 @@ namespace SoundTouch
                     sum += tmp[i] * pBuffer[offs + i];
                 }
 
-                _beatcorr_ringbuff[(_beatcorr_ringbuffpos + offs) % _windowLen] += (float)((sum > 0) ? sum : 0); // accumulate only positive correlations
+                _beatcorr_ringbuff[(_beatcorr_ringbuffpos + offs) % _windowLen] += (sum > 0) ? sum : 0; // accumulate only positive correlations
             }
 
             const int SKIP_STEP = XCORR_UPDATE_SEQUENCE / OVERLAP_FACTOR;

@@ -35,9 +35,9 @@ namespace Example
             _action = action;
         }
 
-        public event EventHandler CanExecuteChanged = (_, __) => { };
+        public event EventHandler? CanExecuteChanged;
 
-        public event PropertyChangedEventHandler PropertyChanged = (_, __) => { };
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public bool IsEnabled
         {
@@ -48,14 +48,14 @@ namespace Example
                     return;
                 _enabled = value;
 
-                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsEnabled)));
-                CanExecuteChanged(this, EventArgs.Empty);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEnabled)));
+                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
-        public bool CanExecute(object parameter) => IsEnabled;
+        public bool CanExecute(object? parameter) => IsEnabled;
 
-        public void Execute(object parameter)
+        public void Execute(object? parameter)
         {
             if (!IsEnabled)
                 return;
