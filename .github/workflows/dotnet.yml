@@ -1,0 +1,43 @@
+name: Build and Publish
+env:
+  buildConfiguration: Release
+
+on:
+  push:
+    branches: 
+      - master
+      - release/*
+      - feature/*
+      - hotfix/*
+    tags:
+      - '*'
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration ${{ env.buildConfiguration }} --no-restore
+      
+    - name: Package
+      run: dotnet pack --configuration ${{ env.buildConfiguration }} --no-build --output ./packages
+        
+    - name: Publish
+      if: success() && github.event_name != 'pull_request'
+      run: dotnet nuget push packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

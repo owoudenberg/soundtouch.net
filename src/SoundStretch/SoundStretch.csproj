@@ -7,6 +7,7 @@
     <NoWarn>$(NoWarn);SA0001</NoWarn>
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
+    <IncludeSymbols>false</IncludeSymbols>
     <PackageDescription>SoundStretch is a command-line tool that performs SoundTouch library effects on wave audio files.
     
 SoundStretch features:
