@@ -104,7 +104,7 @@ namespace SoundTouch
             ResetRegisters();
         }
 
-        protected abstract void ResetRegisters();
+        public abstract void ResetRegisters();
 
         protected abstract int TransposeMono(in Span<float> dest, in ReadOnlySpan<float> src, ref int srcSamples);
 

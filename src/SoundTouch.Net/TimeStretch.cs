@@ -81,11 +81,6 @@ namespace SoundTouch
             _bAutoSeqSetting = true;
             _bAutoSeekSetting = true;
 
-            _maxnorm = 0;
-            _maxnormf = 1e8f;
-
-            _skipFract = 0;
-
             _tempo = 1.0f;
             SetParameters(44100, Defaults.SEQUENCE_MS, Defaults.SEEKWINDOW_MS, Defaults.OVERLAP_MS);
             SetTempo(1.0f);
@@ -140,6 +135,11 @@ namespace SoundTouch
             _inputBuffer.Clear();
             ClearMidBuffer();
             _isBeginning = true;
+
+            _maxnorm = 0;
+            _maxnormf = 1e8f;
+
+            _skipFract = 0;
         }
 
         /// <summary>

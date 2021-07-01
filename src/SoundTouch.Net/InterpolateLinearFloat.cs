@@ -35,7 +35,7 @@ namespace SoundTouch
 
         public override int Latency => 0;
 
-        protected override void ResetRegisters()
+        public override void ResetRegisters()
         {
             _fract = 0;
         }

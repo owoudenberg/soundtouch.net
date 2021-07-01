@@ -163,6 +163,7 @@ namespace SoundTouch
             _outputBuffer.Clear();
             _midBuffer.Clear();
             _inputBuffer.Clear();
+            _transposer.ResetRegisters();
 
             // prefill buffer to avoid losing first samples at beginning of stream
             int prefil = Latency;
