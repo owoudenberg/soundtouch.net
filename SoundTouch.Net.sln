@@ -18,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example", "src\Example\Exam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SoundTouch.Net.NAudioSupport", "src\SoundTouch.Net.NAudioSupport\SoundTouch.Net.NAudioSupport.csproj", "{8717FC10-4F5A-4B35-9B99-E53DC89AEBEB}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SoundTouch.Net.NAudioSupport.Core", "src\SoundTouch.Net.NAudioSupport.Core\SoundTouch.Net.NAudioSupport.Core.csproj", "{372FC194-8421-489A-BC7B-F0E2938395B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{8717FC10-4F5A-4B35-9B99-E53DC89AEBEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8717FC10-4F5A-4B35-9B99-E53DC89AEBEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8717FC10-4F5A-4B35-9B99-E53DC89AEBEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{372FC194-8421-489A-BC7B-F0E2938395B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{372FC194-8421-489A-BC7B-F0E2938395B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{372FC194-8421-489A-BC7B-F0E2938395B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{372FC194-8421-489A-BC7B-F0E2938395B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -49,6 +55,7 @@ Global
 		{EA3040B1-78C6-4395-AB9B-2EF2294FBF90} = {A5F58F09-F6ED-4265-A311-8434740FDE99}
 		{745D12D0-90F2-48D9-9576-281FBE49FBB8} = {A5F58F09-F6ED-4265-A311-8434740FDE99}
 		{8717FC10-4F5A-4B35-9B99-E53DC89AEBEB} = {A5F58F09-F6ED-4265-A311-8434740FDE99}
+		{372FC194-8421-489A-BC7B-F0E2938395B7} = {A5F58F09-F6ED-4265-A311-8434740FDE99}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2E7ECB16-677D-4DB5-BB5B-2087FD80364D}
