@@ -1,12 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
     <Nullable>enable</Nullable>
     <NeutralLanguage>en</NeutralLanguage>
-    <SignAssembly>false</SignAssembly>
     <PackageDescription>This library allows to apply SoundTouch library effects on an NAudio WaveStream.
 Features:    
 * Broad adjustment parameter ranges:
@@ -14,6 +13,8 @@ Features:
   -- The sound Pitch (key) adjustable in range -60 .. +60 semitones (+- 5 octaves).
 * SoundStretch uses the SoundTouch.NET library routines for the audio procesing.
     </PackageDescription>
+    <AssemblyName>SoundTouch.Net.NAudioSupport</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,21 +22,21 @@ Features:
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NAudio" Version="1.9.0" />
+    <PackageReference Include="NAudio.Core" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Assets\Strings.Designer.cs">
+      <DependentUpon>Strings.resx</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Update="Assets\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <Generator>ResXFileCodeGenerator</Generator>
     </EmbeddedResource>
   </ItemGroup>
 

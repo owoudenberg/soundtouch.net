@@ -52,7 +52,7 @@ namespace Example
             SetPlaybackMode(PlaybackMode.Unloaded);
         }
 
-        public event PropertyChangedEventHandler PropertyChanged = (sender, e) => { };
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         private enum PlaybackMode
         {
@@ -226,6 +226,6 @@ namespace Example
         }
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-            => PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
