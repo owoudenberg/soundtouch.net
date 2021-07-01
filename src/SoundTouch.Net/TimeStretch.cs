@@ -768,7 +768,10 @@ namespace SoundTouch
 #endif
 #endif
                     _skipFract -= skip;
-                    Debug.Assert(_nominalSkip >= -_skipFract, "_nominalSkip >= -_skipFract");
+                    if (_skipFract <= -_nominalSkip)
+                    {
+                        _skipFract = -_nominalSkip;
+                    }
                 }
 
                 // ... then copy sequence samples from 'inputBuffer' to output:
