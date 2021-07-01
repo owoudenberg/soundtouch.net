@@ -1,7 +1,7 @@
 # soundtouch.net
 The SoundTouch Library is originally written by Olli Parviainen in C++. Although a .NET wrapper library is available, this library aims to be a complete rewrite in C#.
 
-![example workflow](https://github.com/github/owoudenberg/actions/workflows/dotnet.yml/badge.svg)
+[![Build Status](https://github.com/owoudenberg/soundtouch.net/actions/workflows/dotnet.yml/badge.svg)](https://github.com/owoudenberg/soundtouch.net/actions/workflows/dotnet.yml)
 
 [![NuGet Status](https://img.shields.io/nuget/v/SoundTouch.NET.svg)](https://www.nuget.org/packages/SoundTouch.Net/)
 
