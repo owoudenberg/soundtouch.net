@@ -15,6 +15,7 @@ Features:
     </PackageDescription>
     <AssemblyName>SoundTouch.Net.NAudioSupport</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
+    <PackageId>SoundTouch.Net.NAudioSupport.Core</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

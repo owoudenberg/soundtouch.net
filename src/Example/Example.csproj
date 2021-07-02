@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.0.0" />
+    <PackageReference Remove="GitVersion.MsBuild" />
   </ItemGroup>
 
   <ItemGroup>

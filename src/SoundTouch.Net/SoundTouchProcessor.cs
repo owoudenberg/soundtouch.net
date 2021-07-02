@@ -20,6 +20,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 
 using SoundTouch.Assets;
 
@@ -143,12 +144,12 @@ namespace SoundTouch
         /// <summary>
         /// Gets the <c>SoundTouch</c> library version string.
         /// </summary>
-        public static string VersionString => ThisAssembly.AssemblyInformationalVersion;
+        public static string VersionString => GitVersionInformation.InformationalVersion;
 
         /// <summary>
         /// Gets the <c>SoundTouch</c> library version Id.
         /// </summary>
-        public static Version Version => new Version(ThisAssembly.AssemblyFileVersion);
+        public static Version Version => new Version(GitVersionInformation.AssemblySemFileVer);
 
         /// <summary>
         /// Gets the number of samples currently unprocessed.
